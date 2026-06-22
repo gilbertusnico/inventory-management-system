@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock Opname — Inventaris</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="app" id="root">
+    <aside class="sidebar" id="sidebar"><div class="sidebar-header"><div class="sidebar-logo"><svg class="sidebar-logo-icon" viewBox="0 0 32 32" fill="none"><rect x="2" y="2" width="28" height="28" rx="8" fill="#1144F9"/><path d="M10 16h12M16 10v12" stroke="white" stroke-width="2.5" stroke-linecap="round"/><path d="M8 22V10a2 2 0 012-2h12a2 2 0 012 2v12a2 2 0 01-2 2H10a2 2 0 01-2-2z" stroke="white" stroke-width="1.5" fill="rgba(255,255,255,0.1)"/></svg><span class="sidebar-logo-text">Inventaris</span></div><button class="sidebar-collapse-btn" id="sidebarToggle" aria-label="Toggle sidebar"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button></div>
+        <nav class="sidebar-nav" id="sidebarNav">
+            <div class="nav-group"><div class="nav-group-header" data-group="dashboard"><span style="width:20px;height:20px;display:inline-flex;flex-shrink:0"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></span><span class="nav-group-label">Dashboard</span><svg class="nav-group-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg></div><div class="nav-group-items"><a class="nav-item" href="index.html">Overview</a></div></div>
+            <div class="nav-group"><div class="nav-group-header" data-group="master-data"><span style="width:20px;height:20px;display:inline-flex;flex-shrink:0"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg></span><span class="nav-group-label">Master Data</span><svg class="nav-group-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg></div><div class="nav-group-items"><a class="nav-item" href="produk.html">Produk</a><a class="nav-item" href="kategori.html">Kategori</a><a class="nav-item" href="supplier.html">Supplier</a><a class="nav-item" href="gudang.html">Gudang</a></div></div>
+            <div class="nav-group"><div class="nav-group-header" data-group="inventory"><span style="width:20px;height:20px;display:inline-flex;flex-shrink:0"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 002 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg></span><span class="nav-group-label">Inventory</span><svg class="nav-group-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg></div><div class="nav-group-items"><a class="nav-item" href="barang-masuk.html">Barang Masuk</a><a class="nav-item" href="barang-keluar.html">Barang Keluar</a><a class="nav-item" href="stock-adjustment.html">Stock Adj.</a><a class="nav-item" href="stock-transfer.html">Transfer Stok</a></div></div>
+            <div class="nav-group expanded">
+                <div class="nav-group-header" data-group="stock-opname"><span style="width:20px;height:20px;display:inline-flex;flex-shrink:0"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></span><span class="nav-group-label">Stock Opname</span><svg class="nav-group-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg></div>
+                <div class="nav-group-items" style="max-height:500px"><a class="nav-item active" href="stock-opname.html">Stock Opname</a></div>
+            </div>
+            <div class="nav-group"><div class="nav-group-header" data-group="reports"><span style="width:20px;height:20px;display:inline-flex;flex-shrink:0"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></span><span class="nav-group-label">Laporan</span><svg class="nav-group-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg></div><div class="nav-group-items"><a class="nav-item" href="laporan-stok-saat-ini.html">Stok Saat Ini</a><a class="nav-item" href="laporan-barang-masuk.html">Barang Masuk</a><a class="nav-item" href="laporan-barang-keluar.html">Barang Keluar</a><a class="nav-item" href="laporan-mutasi-stok.html">Mutasi Stok</a></div></div>
+            <div class="nav-group"><div class="nav-group-header" data-group="users"><span style="width:20px;height:20px;display:inline-flex;flex-shrink:0"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg></span><span class="nav-group-label">Pengaturan</span><svg class="nav-group-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg></div><div class="nav-group-items"><a class="nav-item" href="users.html">Users</a><a class="nav-item" href="roles.html">Roles & Permissions</a></div></div>
+        </nav>
+        <div class="sidebar-footer"><div class="sidebar-user"><div class="sidebar-user-avatar">A</div><div class="sidebar-user-info"><div class="sidebar-user-name">Admin User</div><div class="sidebar-user-role">Owner</div></div></div></div>
+    </aside>
+    <div class="main">
+        <header class="top-header"><div class="breadcrumb"><span class="breadcrumb-item">Stock Opname</span><span class="breadcrumb-item">Stock Opname</span></div><div class="header-actions"><div class="search-bar"><svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input type="text" class="search-input" placeholder="Cari..." id="globalSearch"></div><button class="btn-icon notification-btn" aria-label="Notifications"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg><span class="notification-dot"></span></button></div></header>
+        <main class="page-content">
+            <div class="page-header"><div><h1 class="page-title">Stock Opname</h1><p class="page-subtitle">Pencocokan stok fisik dengan sistem</p></div></div>
+            <div class="summary-cards" id="soSummary">
+                <div class="summary-card"><div class="summary-card-label">Total Item</div><div class="summary-card-value" id="soTotal">0</div></div>
+                <div class="summary-card"><div class="summary-card-label">Stok Sesuai</div><div class="summary-card-value" id="soSesuai" style="color:#22c55e">0</div></div>
+                <div class="summary-card"><div class="summary-card-label">Stok Tidak Sesuai</div><div class="summary-card-value" id="soTidakSesuai" style="color:#f59e0b">0</div></div>
+                <div class="summary-card"><div class="summary-card-label">Total Selisih</div><div class="summary-card-value" id="soSelisih" style="color:#ef4444">0</div></div>
+            </div>
+            <div class="filter-bar"><div class="search-bar" style="width:200px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input type="text" class="search-input" placeholder="Cari..." id="tableSearch" style="font-size:12px"></div></div>
+            <div id="tableContainer"><div class="table-container"><table><thead><tr><th>Produk</th><th>Gudang</th><th>Stok Sistem</th><th>Stok Fisik</th><th>Selisih</th><th>Status</th></tr></thead><tbody id="tableBody"></tbody></table></div></div>
+        </main>
+    </div>
+</div>
+<div class="toast-container" id="toastContainer"></div>
+<script src="js/icons.js"></script>
+<script src="js/data.js"></script>
+<script src="js/helpers.js"></script>
+<script src="js/app.js"></script>
+<script src="js/stock-opname.js"></script>
+</body>
+</html>
