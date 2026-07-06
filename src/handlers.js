@@ -179,6 +179,7 @@ export function handleAddBarangMasuk() {
       '<div class="form-group"><label class="form-label">Supplier <span class="required">*</span></label><select class="form-select" id="bm_supplier">' + supOpts + '</select></div>' +
       '<div class="form-group"><label class="form-label">Gudang Tujuan <span class="required">*</span></label><select class="form-select" id="bm_warehouse">' + whOpts + '</select></div>' +
       '<div class="form-group"><label class="form-label">No. Referensi</label><input class="form-input" id="bm_ref" placeholder="PO-2024-XXX"></div>' +
+      '<div class="form-group"><label class="form-label">Catatan</label><textarea class="form-textarea" id="bm_note" rows="2"></textarea></div>' +
     '</div><div style="margin-top:16px">' +
       '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">' +
         '<div style="flex:1"><select class="form-select" id="bm_product" style="width:100%">' + prodOpts + '</select></div>' +
@@ -231,7 +232,7 @@ export function handleAddBarangMasuk() {
           warehouseId: whId,
           ref: document.getElementById('bm_ref')?.value || getNextRef('bm'),
           items: items.slice(),
-          note: ''
+          note: document.getElementById('bm_note')?.value || ''
         });
         window._bmItems = null;
         saveAndRefresh('Barang masuk berhasil dicatat. Stok produk bertambah.');
