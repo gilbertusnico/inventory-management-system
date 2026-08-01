@@ -1,7 +1,7 @@
 // ============================================
 // INVENTARIS — SVG Chart Renderers
 // ============================================
-import { warehouses, productStocks, products } from './data.js';
+import { warehouses, productStocks, products, barangMasuk, barangKeluar } from './data.js';
 
 export function createBarChart(containerId, data, options = {}) {
   const container = document.getElementById(containerId);
@@ -157,18 +157,23 @@ function formatShort(val) {
 }
 
 // Monthly inventory movement data for dashboard
-let _monthlyMovement = null;
 export function getMonthlyMovement() {
-  if (_monthlyMovement) return _monthlyMovement;
   const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
-  // Compute from actual data
   var masuk = months.map(function() { return 0; });
   var keluar = months.map(function() { return 0; });
-  // We don't have transaction years tracked, use mock for now
-  const mockMasuk = [12, 18, 25, 15, 30, 22, 20, 28, 32, 18, 14, 26];
-  const mockKeluar = [8, 14, 20, 12, 25, 18, 16, 22, 28, 14, 10, 22];
-  _monthlyMovement = months.map(function(m, i) { return { label: m, masuk: mockMasuk[i], keluar: mockKeluar[i] }; });
-  return _monthlyMovement;
+  if (typeof barangMasuk !== 'undefined') {
+    barangMasuk.forEach(function(t) {
+      var m = new Date(t.date + 'T00:00:00').getMonth();
+      t.items.forEach(function(it) { masuk[m] += it.qty; });
+    });
+  }
+  if (typeof barangKeluar !== 'undefined') {
+    barangKeluar.forEach(function(t) {
+      var m = new Date(t.date + 'T00:00:00').getMonth();
+      t.items.forEach(function(it) { keluar[m] += it.qty; });
+    });
+  }
+  return months.map(function(m, i) { return { label: m, masuk: masuk[i], keluar: keluar[i] }; });
 }
 
 export function getStockDistribution() {
@@ -187,7 +192,21 @@ export function getStockDistribution() {
 
 export function getMonthlyReportData(type) {
   const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
-  if (type === 'masuk') return months.map((m, i) => ({ label: m, value: Math.floor(Math.random() * 30 + 15 + i * 2) }));
-  if (type === 'keluar') return months.map((m, i) => ({ label: m, value: Math.floor(Math.random() * 25 + 10 + i * 1.5) }));
-  return months.map((m, i) => ({ label: m, value: Math.floor(Math.random() * 20 + 5 + i * 2) }));
+  var masuk = months.map(function() { return 0; });
+  var keluar = months.map(function() { return 0; });
+  if (typeof barangMasuk !== 'undefined') {
+    barangMasuk.forEach(function(t) {
+      var m = new Date(t.date + 'T00:00:00').getMonth();
+      t.items.forEach(function(it) { masuk[m] += it.qty; });
+    });
+  }
+  if (typeof barangKeluar !== 'undefined') {
+    barangKeluar.forEach(function(t) {
+      var m = new Date(t.date + 'T00:00:00').getMonth();
+      t.items.forEach(function(it) { keluar[m] += it.qty; });
+    });
+  }
+  if (type === 'masuk') return months.map((m, i) => ({ label: m, value: masuk[i] }));
+  if (type === 'keluar') return months.map((m, i) => ({ label: m, value: keluar[i] }));
+  return months.map((m, i) => ({ label: m, value: masuk[i] - keluar[i] }));
 }

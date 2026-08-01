@@ -114,6 +114,26 @@ export function renderDashboard() {
   const dist = getStockDistribution();
   const totalStock = productStocks.reduce(function(s, ps) { return s + ps.stock; }, 0);
 
+  // Hitung data aktual untuk KPI change indicators
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - 3);
+  const cutoffStr = cutoff.toISOString().split('T')[0];
+  const newProducts = products.filter(p => p.createdAt && p.createdAt >= cutoffStr).length;
+  const newSuppliers = suppliers.filter(s => s.createdAt && s.createdAt >= cutoffStr).length;
+  const activeWh = warehouses.filter(w => (w.status || 'Aktif') === 'Aktif').length;
+  const inactiveWh = warehouses.length - activeWh;
+
+  function changeUp(text) {
+    return `<div class="kpi-card-change up">${icon('arrowUp', 14)} ${text}</div>`;
+  }
+  function changeDown(text) {
+    return `<div class="kpi-card-change down">${icon('arrowDown', 14)} ${text}</div>`;
+  }
+
+  const whChange = inactiveWh === 0
+    ? changeUp('Aktif semua')
+    : changeDown(inactiveWh === warehouses.length ? 'Semua nonaktif' : inactiveWh + ' nonaktif');
+
   const content = `
     ${pageHeader('Dashboard', 'Ringkasan inventaris dan aktivitas terkini')}
     <div class="kpi-grid">
@@ -122,7 +142,7 @@ export function renderDashboard() {
         <div class="kpi-card-content">
           <div class="kpi-card-label">Total Produk</div>
           <div class="kpi-card-value">${products.length}</div>
-          <div class="kpi-card-change up">${icon('arrowUp', 14)} +2 produk baru</div>
+          ${newProducts > 0 ? changeUp('+' + newProducts + ' produk baru') : ''}
         </div>
       </div>
       <div class="kpi-card">
@@ -130,7 +150,7 @@ export function renderDashboard() {
         <div class="kpi-card-content">
           <div class="kpi-card-label">Total Supplier</div>
           <div class="kpi-card-value">${suppliers.length}</div>
-          <div class="kpi-card-change up">${icon('arrowUp', 14)} +1 supplier baru</div>
+          ${newSuppliers > 0 ? changeUp('+' + newSuppliers + ' supplier baru') : ''}
         </div>
       </div>
       <div class="kpi-card">
@@ -138,7 +158,7 @@ export function renderDashboard() {
         <div class="kpi-card-content">
           <div class="kpi-card-label">Total Gudang</div>
           <div class="kpi-card-value">${warehouses.length}</div>
-          <div class="kpi-card-change up">${icon('arrowUp', 14)} Aktif semua</div>
+          ${whChange}
         </div>
       </div>
       <div class="kpi-card">
@@ -368,6 +388,7 @@ export function renderGudang() {
     { label: 'Kode', key: 'code', sortable: true, render: r => '<span style="font-family:monospace;font-weight:600">' + r.code + '</span>' },
     { label: 'Nama', key: 'name', sortable: true, render: r => '<strong>' + r.name + '</strong>' },
     { label: 'Lokasi', key: 'location', render: r => r.location },
+    { label: 'Status', key: 'status', render: r => statusBadge(r.status || 'Aktif') },
     { label: 'Jml Produk', key: 'count', sortable: true, render: r => '<span style="font-weight:600">' + r.count + '</span>' },
     { label: 'Total Stok', key: 'totalStock', sortable: true, render: r => '<span style="font-weight:600;color:#1144F9">' + (r.totalStock || 0) + '</span>' },
     { label: 'Aksi', key: null, render: r => '<div class="table-actions">' +

@@ -140,6 +140,7 @@ export function handleAddGudang() {
     '<div class="form-grid">' +
       '<div class="form-group"><label class="form-label">Kode Gudang <span class="required">*</span></label><input class="form-input" id="g_code" placeholder="WH-XXX"></div>' +
       '<div class="form-group"><label class="form-label">Nama Gudang <span class="required">*</span></label><input class="form-input" id="g_name" placeholder="Nama gudang"></div>' +
+      '<div class="form-group"><label class="form-label">Status</label><select class="form-select" id="g_status"><option value="Aktif">Aktif</option><option value="Nonaktif">Nonaktif</option></select></div>' +
       '<div class="form-group full"><label class="form-label">Lokasi <span class="required">*</span></label><input class="form-input" id="g_location" placeholder="Alamat lengkap"></div>' +
     '</div>',
     '<button class="btn btn-secondary" onclick="closeModal()">Batal</button><button class="btn btn-primary" id="saveGudang">Simpan</button>');
@@ -148,11 +149,13 @@ export function handleAddGudang() {
     if (saveBtn) {
       saveBtn.addEventListener('click', function() {
         var newId = nextId(warehouses);
+        var gStatus = (document.getElementById('g_status') ? document.getElementById('g_status').value : '') || 'Aktif';
         warehouses.push({
           id: newId,
           code: (document.getElementById('g_code') ? document.getElementById('g_code').value : '') || 'WH-' + String(newId).padStart(3, '0'),
           name: (document.getElementById('g_name') ? document.getElementById('g_name').value : '') || 'Gudang Baru',
           location: (document.getElementById('g_location') ? document.getElementById('g_location').value : '') || '',
+          status: gStatus,
           createdAt: new Date().toISOString().split('T')[0]
         });
         saveAndRefresh('Gudang berhasil ditambahkan');
@@ -179,6 +182,7 @@ export function handleAddBarangMasuk() {
       '<div class="form-group"><label class="form-label">Supplier <span class="required">*</span></label><select class="form-select" id="bm_supplier">' + supOpts + '</select></div>' +
       '<div class="form-group"><label class="form-label">Gudang Tujuan <span class="required">*</span></label><select class="form-select" id="bm_warehouse">' + whOpts + '</select></div>' +
       '<div class="form-group"><label class="form-label">No. Referensi</label><input class="form-input" id="bm_ref" placeholder="PO-2024-XXX"></div>' +
+      '<div class="form-group full"><label class="form-label">Catatan</label><textarea class="form-textarea" id="bm_note" rows="2" placeholder="Catatan penerimaan (opsional)"></textarea></div>' +
     '</div><div style="margin-top:16px">' +
       '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">' +
         '<div style="flex:1"><select class="form-select" id="bm_product" style="width:100%">' + prodOpts + '</select></div>' +
@@ -231,7 +235,7 @@ export function handleAddBarangMasuk() {
           warehouseId: whId,
           ref: document.getElementById('bm_ref')?.value || getNextRef('bm'),
           items: items.slice(),
-          note: ''
+          note: document.getElementById('bm_note')?.value || ''
         });
         window._bmItems = null;
         saveAndRefresh('Barang masuk berhasil dicatat. Stok produk bertambah.');
@@ -411,11 +415,14 @@ export function handleAddStockAdjustment() {
 export function handleAddStockTransfer() {
   var whOpts = warehouses.map(function(w) { return '<option value="' + w.id + '">' + w.name + '</option>'; }).join('');
   var firstWhId = warehouses.length > 0 ? warehouses[0].id : 0;
+  var today = new Date().toISOString().split('T')[0];
 
   showModal('Transfer Stok Baru',
     '<div class="form-grid">' +
       '<div class="form-group"><label class="form-label">Gudang Asal <span class="required">*</span></label><select class="form-select" id="st_from">' + whOpts + '</select></div>' +
       '<div class="form-group"><label class="form-label">Gudang Tujuan <span class="required">*</span></label><select class="form-select" id="st_to">' + whOpts + '</select></div>' +
+      '<div class="form-group"><label class="form-label">Tanggal <span class="required">*</span></label><input class="form-input" id="st_date" type="date" value="' + today + '"></div>' +
+      '<div class="form-group"><label class="form-label">No. Referensi</label><input class="form-input" id="st_ref" placeholder="TRF-XXX"></div>' +
     '</div><div style="margin-top:16px">' +
       '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">' +
         '<div style="flex:1"><select class="form-select" id="st_product" style="width:100%"></select></div>' +
@@ -477,11 +484,11 @@ export function handleAddStockTransfer() {
         var newId = nextId(stockTransfers);
         stockTransfers.push({
           id: newId,
-          date: new Date().toISOString().split('T')[0],
+          date: document.getElementById('st_date')?.value || new Date().toISOString().split('T')[0],
           fromWarehouseId: fromWhId,
           toWarehouseId: toWhId,
           items: items.slice(),
-          ref: 'TRF-' + String(newId).padStart(3, '0')
+          ref: document.getElementById('st_ref')?.value || 'TRF-' + String(newId).padStart(3, '0')
         });
         saveAndRefresh('Transfer stok berhasil disimpan.');
       });
@@ -627,7 +634,8 @@ export function handleEdit(action, id) {
     item = warehouses.find(function(w) { return w.id == id; });
     if (!item) { showToast('Gudang tidak ditemukan', 'error'); return; }
     title = 'Edit Gudang';
-    fields = '<div class="form-grid"><div class="form-group"><label class="form-label">Kode Gudang</label><input class="form-input" id="g_code" value="' + (item.code || '').replace(/"/g, '&quot;') + '"></div><div class="form-group"><label class="form-label">Nama Gudang</label><input class="form-input" id="g_name" value="' + (item.name || '').replace(/"/g, '&quot;') + '"></div><div class="form-group full"><label class="form-label">Lokasi</label><input class="form-input" id="g_location" value="' + (item.location || '').replace(/"/g, '&quot;') + '"></div></div>';
+    var gStatusOpts = '<option value="Aktif"' + (item.status !== 'Nonaktif' ? ' selected' : '') + '>Aktif</option><option value="Nonaktif"' + (item.status === 'Nonaktif' ? ' selected' : '') + '>Nonaktif</option>';
+    fields = '<div class="form-grid"><div class="form-group"><label class="form-label">Kode Gudang</label><input class="form-input" id="g_code" value="' + (item.code || '').replace(/"/g, '&quot;') + '"></div><div class="form-group"><label class="form-label">Nama Gudang</label><input class="form-input" id="g_name" value="' + (item.name || '').replace(/"/g, '&quot;') + '"></div><div class="form-group"><label class="form-label">Status</label><select class="form-select" id="g_status">' + gStatusOpts + '</select></div><div class="form-group full"><label class="form-label">Lokasi</label><input class="form-input" id="g_location" value="' + (item.location || '').replace(/"/g, '&quot;') + '"></div></div>';
   } else if (type === 'user') {
     item = users.find(function(u) { return u.id == id; });
     if (!item) { showToast('User tidak ditemukan', 'error'); return; }
@@ -665,6 +673,7 @@ export function handleEdit(action, id) {
           item.code = document.getElementById('g_code')?.value || item.code;
           item.name = document.getElementById('g_name')?.value || item.name;
           item.location = document.getElementById('g_location')?.value || item.location;
+          item.status = document.getElementById('g_status')?.value || item.status;
         } else if (type === 'user') {
           item.name = document.getElementById('u_name')?.value || item.name;
           item.email = document.getElementById('u_email')?.value || item.email;

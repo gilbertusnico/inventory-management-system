@@ -30,9 +30,9 @@ export const suppliers = [
 ];
 
 export const warehouses = [
-  { id: 1, code: 'WH-MDN', name: 'Gudang Medan', location: 'Jl. Gatot Subroto No. 123, Medan', createdAt: '2024-12-02' },
-  { id: 2, code: 'WH-JKT', name: 'Gudang Jakarta', location: 'Jl. Sudirman No. 45, Jakarta Pusat', createdAt: '2024-12-04' },
-  { id: 3, code: 'WH-SBY', name: 'Gudang Surabaya', location: 'Jl. Pemuda No. 78, Surabaya', createdAt: '2024-12-06' },
+  { id: 1, code: 'WH-MDN', name: 'Gudang Medan', location: 'Jl. Gatot Subroto No. 123, Medan', status: 'Aktif', createdAt: '2024-12-02' },
+  { id: 2, code: 'WH-JKT', name: 'Gudang Jakarta', location: 'Jl. Sudirman No. 45, Jakarta Pusat', status: 'Aktif', createdAt: '2024-12-04' },
+  { id: 3, code: 'WH-SBY', name: 'Gudang Surabaya', location: 'Jl. Pemuda No. 78, Surabaya', status: 'Aktif', createdAt: '2024-12-06' },
 ];
 
 // ============================================

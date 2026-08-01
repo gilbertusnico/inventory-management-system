@@ -54,5 +54,6 @@ export const NAV_GROUPS = [
   { id: 'inventory', label: 'Inventory', icon: 'package' },
   { id: 'stock-opname', label: 'Stock Opname', icon: 'clipboard' },
   { id: 'reports', label: 'Laporan', icon: 'chart' },
-  { id: 'users', label: 'Pengaturan', icon: 'users' },
+  // Menu Pengaturan (Users & Roles) disembunyikan dari sidebar — aktifkan kembali dengan menghapus komentar baris ini
+  // { id: 'users', label: 'Pengaturan', icon: 'users' },
 ];
