@@ -233,10 +233,43 @@ function setupEvents() {
     else if (action === 'add-sa') handleAddStockAdjustment();
     else if (action === 'add-st') handleAddStockTransfer();
     else if (action === 'add-user') handleAddUser();
-    else if (action === 'export-btn' || action === 'export-report') showToast('Laporan sedang diproses', 'info');
+    else if (action === 'export-btn') showToast('Laporan sedang diproses', 'info');
     else if (action.startsWith('edit-')) handleEdit(action, id);
     else if (action.startsWith('delete-')) handleDelete(action, id);
     else if (action.startsWith('detail-')) handleDetail(action, id);
+  });
+
+  // Report actions (data-report-action)
+  app.addEventListener('click', function(e) {
+    var btn = e.target.closest('[data-report-action]');
+    if (!btn) return;
+    var reportAction = btn.dataset.reportAction;
+    var reportType = btn.dataset.report;
+
+    if (reportAction === 'export-pdf') {
+      if (reportType) {
+        import('./export.js').then(function(mod) {
+          mod.exportReportPDF(reportType);
+        }).catch(function() {
+          showToast('Gagal memuat PDF exporter', 'error');
+        });
+      }
+    } else if (reportAction === 'reset-daterange') {
+      window._dateFrom = '';
+      window._dateTo = '';
+      window._currentPage = 1;
+      renderPage(getCurrentRoute());
+    }
+  });
+
+  // Date range inputs — auto-apply on change
+  app.addEventListener('change', function(e) {
+    var input = e.target.closest('#dateFrom, #dateTo');
+    if (!input) return;
+    window._dateFrom = document.getElementById('dateFrom')?.value || '';
+    window._dateTo = document.getElementById('dateTo')?.value || '';
+    window._currentPage = 1;
+    renderPage(getCurrentRoute());
   });
 
   // Sidebar toggle

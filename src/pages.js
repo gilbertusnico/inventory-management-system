@@ -4,9 +4,27 @@
 import { icon } from './icons.js';
 import { products, categories, suppliers, warehouses, barangMasuk, barangKeluar, stockAdjustments, stockTransfers, stockOpname, users, permissions, productStocks, getProductStockRows, getCategory, getSupplier, getWarehouse, getProduct, getUser, getBarangMasuk, getBarangKeluar, getLowStockProducts, getProductsByWarehouse, getTotalStock, getAllProductStocks, formatCurrency, formatDate, formatDateTime } from './data.js';
 import { createBarChart, createDonutChart, createLineChart, getMonthlyMovement, getStockDistribution } from './charts.js';
+import { getDateRange, inRange, filterByDate, getLatest, buildMonthlySeries, buildMutasiSeries, reportFilterBar } from './report-utils.js';
 function getPage() { return window._currentPage || 1; }
 function getSort() { return window._currentSort || { key: null, asc: true }; }
 function getSearch() { return window._searchTerm || ''; }
+
+// Search input snippet for report pages (inside the report filter bar)
+function reportSearch() {
+  const term = getSearch();
+  return '<div class="search-bar" style="width:220px">' +
+    '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>' +
+    '<input type="text" class="search-input" placeholder="Cari..." id="tableSearch" value="' + term + '" style="font-size:12px">' +
+  '</div>';
+}
+
+// Active filter badge (shows current date range on the page)
+function reportRangeBadge() {
+  var range = getDateRange();
+  if (!range.from && !range.to) return '';
+  return '<div class="report-range-badge">' + icon('calendar', 12) +
+    ' Periode: <strong>' + (range.from || 'awal') + '</strong> s/d <strong>' + (range.to || 'sekarang') + '</strong></div>';
+}
 
 // ======================
 // UTILITY HELPERS
@@ -91,13 +109,17 @@ function renderTable(data, columns, page = 1, perPage = 10) {
     html += `<th${sortable} data-sort="${col.key}">${col.label}${arrow}</th>`;
   });
   html += '</tr></thead><tbody>';
-  pageData.forEach(row => {
-    html += '<tr>';
-    columns.forEach(col => {
-      html += `<td>${col.render ? col.render(row) : row[col.key] ?? '-'}</td>`;
+  if (data.length === 0) {
+    html += '<tr><td colspan="' + columns.length + '" class="report-empty">Belum ada data pada periode ini — coba ubah rentang tanggal atau tambahkan transaksi baru.</td></tr>';
+  } else {
+    pageData.forEach(row => {
+      html += '<tr>';
+      columns.forEach(col => {
+        html += `<td>${col.render ? col.render(row) : row[col.key] ?? '-'}</td>`;
+      });
+      html += '</tr>';
     });
-    html += '</tr>';
-  });
+  }
   html += '</tbody></table></div>';
   html += renderPagination(data.length, page, perPage);
   return html;
@@ -242,17 +264,17 @@ export function renderDashboard() {
   setTimeout(() => {
     const moveContainer = document.getElementById('chartMovement');
     const mw = moveContainer?.clientWidth || 600;
-    createBarChartCustom('chartMovement', movement.flatMap(m => [{ label: m.label, value: m.masuk, color: '#1144F9' }, { label: '', value: m.keluar, color: '#22c55e' }]), mw);
+    createBarChartCustom('chartMovement', movement, mw);
     createDonutChart('chartDistribution', dist, { size: 180, strokeWidth: 32 });
   }, 50);
 
   return content;
 }
 
-function createBarChartCustom(containerId, data, width) {
+function createBarChartCustom(containerId, movement, width) {
   const container = document.getElementById(containerId);
   if (!container) return;
-  const movement = getMonthlyMovement();
+  if (!movement || !movement.length) movement = getMonthlyMovement();
   const height = 260;
   const pad = { top: 34, right: 20, bottom: 40, left: 50 };
   const chartW = width - pad.left - pad.right;
@@ -536,7 +558,12 @@ export function renderStockOpname() {
 
 // --- REPORTS ---
 export function renderReportStok() {
+  const range = getDateRange();
   let data = getProductStockRows();
+  // Date range filter: produk yang terdaftar dalam periode
+  if (range.from || range.to) {
+    data = data.filter(r => inRange(r.createdAt, range.from, range.to));
+  }
   const search = getSearch();
   if (search) data = filterData(data, search, ['name', 'sku']);
   const sort = getSort();
@@ -562,112 +589,158 @@ export function renderReportStok() {
     { label: 'Total Nilai', key: null, render: r => formatCurrency(r.stock * r.price) },
   ];
 
-  return pageHeader('Laporan Stok Saat Ini', 'Ringkasan stok dan nilai inventaris', '<button class="btn btn-secondary btn-sm" data-action="export-report">' + icon('download', 14) + ' Export PDF</button>') +
+  return pageHeader('Laporan Stok Saat Ini', 'Ringkasan stok dan nilai inventaris') +
+    reportFilterBar('stok', reportSearch()) +
+    reportRangeBadge() +
     '<div class="summary-cards">' +
       '<div class="summary-card"><div class="summary-card-label">Total Produk (SKU)</div><div class="summary-card-value">' + products.length + '</div></div>' +
       '<div class="summary-card"><div class="summary-card-label">Total Item</div><div class="summary-card-value">' + totalItems + '</div></div>' +
       '<div class="summary-card"><div class="summary-card-label">Total Nilai</div><div class="summary-card-value">' + formatCurrency(totalValue) + '</div></div>' +
     '</div>' +
-    filterBar() + renderTable(data, cols, getPage());
+    '<div class="report-table-card">' + renderTable(data, cols, getPage()) + '</div>';
 }
+
 export function renderReportMasuk() {
-  const totalBarangMasuk = barangMasuk.reduce((s, t) => s + t.items.reduce((si, i) => si + i.qty, 0), 0);
-  // Build chart data from actual barang masuk grouped by month
-  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
-  const monthlyData = months.map(m => ({ label: m, value: 0 }));
-  barangMasuk.forEach(t => {
-    if (t.date) {
-      const monthIdx = new Date(t.date).getMonth();
-      if (monthIdx >= 0 && monthIdx < 12) {
-        monthlyData[monthIdx].value += t.items.reduce((s, i) => s + i.qty, 0);
-      }
-    }
-  });
-  const total = monthlyData.reduce((s, d) => s + d.value, 0);
+  let data = filterByDate(barangMasuk);
+  const totalQty = data.reduce((s, t) => s + t.items.reduce((si, i) => si + i.qty, 0), 0);
+  const latest = getLatest(data)[0];
+  const latestQty = latest ? latest.items.reduce((s, i) => s + i.qty, 0) : 0;
+  // Grafik dari data aktual yang sudah difilter
+  const chartData = buildMonthlySeries(data, t => t.items.reduce((s, i) => s + i.qty, 0));
+
+  // Search memfilter tabel detail saja
+  const search = getSearch();
+  let tableData = data;
+  if (search) {
+    const t = search.toLowerCase();
+    tableData = data.filter(x =>
+      (getSupplier(x.supplierId)?.name || '').toLowerCase().includes(t) ||
+      (getWarehouse(x.warehouseId)?.name || '').toLowerCase().includes(t) ||
+      (x.ref || '').toLowerCase().includes(t) ||
+      (x.note || '').toLowerCase().includes(t)
+    );
+  }
+
+  const cols = [
+    { label: 'Tanggal', key: 'date', sortable: true, render: r => formatDate(r.date) },
+    { label: 'Supplier', key: 'supplierId', render: r => getSupplier(r.supplierId)?.name || '-' },
+    { label: 'Gudang', key: 'warehouseId', render: r => getWarehouse(r.warehouseId)?.name || '-' },
+    { label: 'Referensi', key: 'ref', render: r => '<span style="font-family:monospace">' + (r.ref || '-') + '</span>' },
+    { label: 'Item', key: 'items', render: r => r.items.reduce(function(s, i) { return s + i.qty; }, 0) + ' item' },
+    { label: 'Catatan', key: 'note', render: r => r.note || '-' },
+  ];
+  const sorted = [...tableData].sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+
   const content = `
     ${pageHeader('Laporan Barang Masuk', 'Grafik dan data penerimaan barang')}
+    ${reportFilterBar('masuk', reportSearch())}
+    ${reportRangeBadge()}
     <div class="summary-cards">
       <div class="summary-card">
         <div class="summary-card-label">Total Penerimaan</div>
-        <div class="summary-card-value">${total} item</div>
+        <div class="summary-card-value">${totalQty} item</div>
       </div>
       <div class="summary-card">
         <div class="summary-card-label">Total Transaksi</div>
-        <div class="summary-card-value">${barangMasuk.length} transaksi</div>
+        <div class="summary-card-value">${data.length} transaksi</div>
       </div>
       <div class="summary-card">
         <div class="summary-card-label">Penerimaan Terakhir</div>
-        <div class="summary-card-value">${barangMasuk.length > 0 ? barangMasuk.reduce((s, t) => s + t.items.reduce((si, i) => si + i.qty, 0), 0) : 0} item</div>
+        <div class="summary-card-value">${latest ? latestQty + ' item' : '0 item'}</div>
+        <div style="font-size:11px;color:#999;margin-top:2px">${latest ? formatDate(latest.date) : '-'}</div>
       </div>
     </div>
     <div class="card">
       <div class="card-header"><div class="card-title">Grafik Barang Masuk per Bulan</div></div>
       <div class="chart-container" id="reportChart"><svg width="100%" height="260" viewBox="0 0 600 260"><text x="300" y="130" text-anchor="middle" fill="#999" font-size="13">Memuat grafik...</text></svg></div>
     </div>
+    <div class="report-table-card">${renderTable(sorted, cols, getPage())}</div>
   `;
-  setTimeout(() => createBarChart('reportChart', monthlyData, { barColor: '#22c55e', height: 260 }), 50);
+  setTimeout(() => createBarChart('reportChart', chartData, { barColor: '#22c55e', height: 260 }), 50);
   return content;
 }
 
 export function renderReportKeluar() {
-  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
-  const monthlyData = months.map(m => ({ label: m, value: 0 }));
-  barangKeluar.forEach(t => {
-    if (t.date) {
-      const monthIdx = new Date(t.date).getMonth();
-      if (monthIdx >= 0 && monthIdx < 12) {
-        monthlyData[monthIdx].value += t.items.reduce((s, i) => s + i.qty, 0);
-      }
-    }
-  });
-  const total = monthlyData.reduce((s, d) => s + d.value, 0);
+  let data = filterByDate(barangKeluar);
+  const totalQty = data.reduce((s, t) => s + t.items.reduce((si, i) => si + i.qty, 0), 0);
+  const latest = getLatest(data)[0];
+  const latestQty = latest ? latest.items.reduce((s, i) => s + i.qty, 0) : 0;
+  const chartData = buildMonthlySeries(data, t => t.items.reduce((s, i) => s + i.qty, 0));
+
+  const search = getSearch();
+  let tableData = data;
+  if (search) {
+    const t = search.toLowerCase();
+    tableData = data.filter(x =>
+      x.penerima.toLowerCase().includes(t) ||
+      (getWarehouse(x.warehouseId)?.name || '').toLowerCase().includes(t) ||
+      (x.ref || '').toLowerCase().includes(t) ||
+      (x.note || '').toLowerCase().includes(t)
+    );
+  }
+
+  const cols = [
+    { label: 'Tanggal', key: 'date', sortable: true, render: r => formatDate(r.date) },
+    { label: 'Penerima', key: 'penerima', render: r => r.penerima },
+    { label: 'Gudang', key: 'warehouseId', render: r => getWarehouse(r.warehouseId)?.name || '-' },
+    { label: 'Referensi', key: 'ref', render: r => '<span style="font-family:monospace">' + (r.ref || '-') + '</span>' },
+    { label: 'Item', key: 'items', render: r => r.items.reduce(function(s, i) { return s + i.qty; }, 0) + ' item' },
+    { label: 'Catatan', key: 'note', render: r => r.note || '-' },
+  ];
+  const sorted = [...tableData].sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+
   const content = `
     ${pageHeader('Laporan Barang Keluar', 'Grafik dan data pengeluaran barang')}
+    ${reportFilterBar('keluar', reportSearch())}
+    ${reportRangeBadge()}
     <div class="summary-cards">
       <div class="summary-card">
         <div class="summary-card-label">Total Pengeluaran</div>
-        <div class="summary-card-value">${total} item</div>
+        <div class="summary-card-value">${totalQty} item</div>
       </div>
       <div class="summary-card">
         <div class="summary-card-label">Total Transaksi</div>
-        <div class="summary-card-value">${barangKeluar.length} transaksi</div>
+        <div class="summary-card-value">${data.length} transaksi</div>
       </div>
       <div class="summary-card">
         <div class="summary-card-label">Pengeluaran Terakhir</div>
-        <div class="summary-card-value">${barangKeluar.length > 0 ? barangKeluar.reduce((s, t) => s + t.items.reduce((si, i) => si + i.qty, 0), 0) : 0} item</div>
+        <div class="summary-card-value">${latest ? latestQty + ' item' : '0 item'}</div>
+        <div style="font-size:11px;color:#999;margin-top:2px">${latest ? formatDate(latest.date) : '-'}</div>
       </div>
     </div>
     <div class="card">
       <div class="card-header"><div class="card-title">Grafik Barang Keluar per Bulan</div></div>
       <div class="chart-container" id="reportChart"><svg width="100%" height="260" viewBox="0 0 600 260"><text x="300" y="130" text-anchor="middle" fill="#999" font-size="13">Memuat grafik...</text></svg></div>
     </div>
+    <div class="report-table-card">${renderTable(sorted, cols, getPage())}</div>
   `;
-  setTimeout(() => createBarChart('reportChart', monthlyData, { barColor: '#f59e0b', height: 260 }), 50);
+  setTimeout(() => createBarChart('reportChart', chartData, { barColor: '#f59e0b', height: 260 }), 50);
   return content;
 }
 
 export function renderReportMutasi() {
-  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
-  const masukData = months.map(m => ({ label: m, value: 0 }));
-  const keluarData = months.map(m => ({ label: m, value: 0 }));
-  barangMasuk.forEach(t => {
-    if (t.date) {
-      const monthIdx = new Date(t.date).getMonth();
-      if (monthIdx >= 0 && monthIdx < 12) masukData[monthIdx].value += t.items.reduce((s, i) => s + i.qty, 0);
-    }
-  });
-  barangKeluar.forEach(t => {
-    if (t.date) {
-      const monthIdx = new Date(t.date).getMonth();
-      if (monthIdx >= 0 && monthIdx < 12) keluarData[monthIdx].value += t.items.reduce((s, i) => s + i.qty, 0);
-    }
-  });
-  const totalMasuk = masukData.reduce((s, d) => s + d.value, 0);
-  const totalKeluar = keluarData.reduce((s, d) => s + d.value, 0);
+  const masukData = filterByDate(barangMasuk);
+  const keluarData = filterByDate(barangKeluar);
+  const totalMasuk = masukData.reduce((s, t) => s + t.items.reduce((si, i) => si + i.qty, 0), 0);
+  const totalKeluar = keluarData.reduce((s, t) => s + t.items.reduce((si, i) => si + i.qty, 0), 0);
   const selisih = totalMasuk - totalKeluar;
+  const series = buildMutasiSeries(masukData, keluarData);
+
+  const cols = [
+    { label: 'Bulan', key: 'label', render: r => '<strong>' + r.label + '</strong>' },
+    { label: 'Barang Masuk', key: 'masuk', sortable: true, render: r => r.masuk + ' item' },
+    { label: 'Barang Keluar', key: 'keluar', sortable: true, render: r => r.keluar + ' item' },
+    { label: 'Selisih', key: 'selisih', sortable: true, render: r => {
+      const d = r.masuk - r.keluar;
+      return '<span style="font-weight:600;color:' + (d < 0 ? '#ef4444' : '#22c55e') + '">' + (d >= 0 ? '+' : '') + d + '</span>';
+    }},
+  ];
+  const rows = series.map(s => ({ label: s.label, masuk: s.masuk, keluar: s.keluar, selisih: s.masuk - s.keluar }));
 
   const content = `
     ${pageHeader('Laporan Mutasi Stok', 'Perbandingan barang masuk dan keluar')}
+    ${reportFilterBar('mutasi', '')}
+    ${reportRangeBadge()}
     <div class="summary-cards">
       <div class="summary-card">
         <div class="summary-card-label">Total Barang Masuk</div>
@@ -686,10 +759,11 @@ export function renderReportMutasi() {
       <div class="card-header"><div class="card-title">Perbandingan Bulanan</div></div>
       <div class="chart-container" id="mutasiChart"><svg width="100%" height="280" viewBox="0 0 600 280"><text x="300" y="140" text-anchor="middle" fill="#999" font-size="13">Memuat grafik...</text></svg></div>
     </div>
+    <div class="report-table-card">${renderTable(rows, cols, getPage())}</div>
   `;
   setTimeout(() => {
     const mw = document.getElementById('mutasiChart')?.clientWidth || 600;
-    createBarChartCustom('mutasiChart', null, mw);
+    createBarChartCustom('mutasiChart', series, mw);
   }, 50);
   return content;
 }

@@ -933,6 +933,91 @@ tbody tr:last-child td {
   width: 200px;
 }
 
+/* --- Report Filter Bar (date range + export) --- */
+.report-filter-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 10px 12px;
+  margin-bottom: 16px;
+}
+
+.date-range-inputs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.date-label {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  font-weight: 500;
+}
+
+.date-input {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm, 6px);
+  padding: 6px 10px;
+  font-size: 12px;
+  font-family: inherit;
+  background: #fff;
+  color: var(--color-text);
+  outline: none;
+  transition: border-color 150ms ease-out, box-shadow 150ms ease-out;
+}
+
+.date-input:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(17, 68, 249, 0.12);
+}
+
+.report-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.report-range-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--color-text-muted);
+  background: #f5f7ff;
+  border: 1px solid #dfe4ff;
+  border-radius: 999px;
+  padding: 4px 10px;
+  margin-bottom: 16px;
+}
+
+/* --- Report table card wrapper --- */
+.report-table-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 4px 8px;
+  margin-top: 16px;
+}
+
+.report-empty {
+  text-align: center;
+  padding: 32px 16px;
+  color: var(--color-text-muted);
+  font-size: 13px;
+}
+
+.report-empty svg {
+  margin: 0 auto 8px;
+  display: block;
+  opacity: 0.5;
+}
+
 /* --- Modal --- */
 .modal-overlay {
   display: none;
