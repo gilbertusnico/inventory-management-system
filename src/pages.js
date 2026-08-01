@@ -219,24 +219,21 @@ export function renderDashboard() {
           </div>
         </div>
         <div class="activity-list">
-          ${barangMasuk.slice(0, 3).map(t => `
-            <div class="activity-item">
-              <div class="activity-dot green"></div>
-              <div class="activity-content">
-                <div class="activity-text"><strong>Barang Masuk</strong> — ${t.items.length} item (${formatDate(t.date)})</div>
-                <div class="activity-time">${t.ref || 'No ref'}</div>
-              </div>
-            </div>
-          `).join('')}
-          ${barangKeluar.slice(0, 3).map(t => `
-            <div class="activity-item">
-              <div class="activity-dot blue"></div>
-              <div class="activity-content">
-                <div class="activity-text"><strong>Barang Keluar</strong> — ${t.penerima} (${formatDate(t.date)})</div>
-                <div class="activity-time">${t.ref || 'No ref'}</div>
-              </div>
-            </div>
-          `).join('')}
+          ${[].concat(
+            barangMasuk.map(t => ({ ...t, _type: 'masuk', _label: 'Barang Masuk', _detail: t.items.length + ' item' })),
+            barangKeluar.map(t => ({ ...t, _type: 'keluar', _label: 'Barang Keluar', _detail: t.penerima }))
+          ).sort(function(a, b) {
+            return (b.date || '').localeCompare(a.date || '');
+          }).slice(0, 5).map(function(t) {
+            var dotColor = t._type === 'masuk' ? 'green' : 'blue';
+            return '<div class="activity-item">' +
+              '<div class="activity-dot ' + dotColor + '"></div>' +
+              '<div class="activity-content">' +
+                '<div class="activity-text"><strong>' + t._label + '</strong> — ' + t._detail + ' (' + formatDate(t.date) + ')</div>' +
+                '<div class="activity-time">' + (t.ref || 'No ref') + '</div>' +
+              '</div>' +
+            '</div>';
+          }).join('') || '<p style="text-align:center;padding:20px;color:#999">Belum ada transaksi</p>'}
         </div>
       </div>
     </div>
