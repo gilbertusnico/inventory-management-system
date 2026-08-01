@@ -26,10 +26,71 @@ function saveAndRefresh(msg) {
 }
 
 // ======================
+// FORM VALIDATION HELPERS
+// ======================
+function formValue(id) {
+  var el = document.getElementById(id);
+  return el ? (el.value || '').trim() : '';
+}
+function markError(id, message) {
+  var el = document.getElementById(id);
+  if (!el) return;
+  el.classList.add('form-error');
+  var next = el.nextElementSibling;
+  if (next && next.classList && next.classList.contains('field-error')) next.remove();
+  var msg = document.createElement('div');
+  msg.className = 'field-error';
+  msg.textContent = message;
+  el.insertAdjacentElement('afterend', msg);
+}
+function clearFormErrors() {
+  document.querySelectorAll('.modal .field-error').forEach(function(el) { el.remove(); });
+  document.querySelectorAll('.modal .form-error').forEach(function(el) { el.classList.remove('form-error'); });
+}
+function focusFirstError() {
+  var first = document.querySelector('.modal .form-error');
+  if (first) first.focus();
+}
+function validateRequired(id, label) {
+  if (!formValue(id)) { markError(id, label + ' wajib diisi'); return false; }
+  return true;
+}
+function validateNumber(id, label, opts) {
+  opts = opts || {};
+  var raw = formValue(id);
+  if (raw === '') { markError(id, label + ' wajib diisi'); return false; }
+  var n = Number(raw);
+  if (isNaN(n)) { markError(id, label + ' harus berupa angka'); return false; }
+  if (opts.min !== undefined && n < opts.min) { markError(id, label + ' minimal ' + opts.min); return false; }
+  return true;
+}
+function validateEmail(id, label) {
+  var v = formValue(id);
+  if (!v) { markError(id, label + ' wajib diisi'); return false; }
+  if (!/^\S+@\S+\.\S+$/.test(v)) { markError(id, label + ' tidak valid (contoh: nama@domain.com)'); return false; }
+  return true;
+}
+function validateMinLength(id, label, min) {
+  var v = formValue(id);
+  if (!v) { markError(id, label + ' wajib diisi'); return false; }
+  if (v.length < min) { markError(id, label + ' minimal ' + min + ' karakter'); return false; }
+  return true;
+}
+function hasSelectValue(id, label) {
+  var el = document.getElementById(id);
+  var v = el ? el.value : '';
+  if (!v) { markError(id, label + ' wajib dipilih'); return false; }
+  return true;
+}
+
+// ======================
 // MASTER DATA ADD: PRODUK
 // ======================
 export function handleAddMaster(type) {
   if (type === 'add-produk') {
+    if (categories.length === 0) { showToast('Tambahkan kategori terlebih dahulu sebelum membuat produk', 'error'); return; }
+    if (suppliers.length === 0) { showToast('Tambahkan supplier terlebih dahulu sebelum membuat produk', 'error'); return; }
+    if (warehouses.length === 0) { showToast('Tambahkan gudang terlebih dahulu sebelum membuat produk', 'error'); return; }
     var catOpts = categories.map(function(c) { return '<option value="' + c.id + '">' + c.name + '</option>'; }).join('');
     var supOpts = suppliers.map(function(s) { return '<option value="' + s.id + '">' + s.name + '</option>'; }).join('');
     var whOpts = warehouses.map(function(w) { return '<option value="' + w.id + '">' + w.name + '</option>'; }).join('');
@@ -53,18 +114,24 @@ export function handleAddMaster(type) {
       var saveBtn = document.getElementById('saveMaster');
       if (saveBtn) {
         saveBtn.addEventListener('click', function() {
+          clearFormErrors();
+          var ok = true;
+          ok = validateRequired('f_name', 'Nama produk') && ok;
+          ok = validateRequired('f_sku', 'SKU') && ok;
+          ok = validateNumber('f_price', 'Harga', { min: 1 }) && ok;
+          if (!ok) { focusFirstError(); return; }
           var newId = nextId(products);
           var whId = parseInt(document.getElementById('f_warehouse') ? document.getElementById('f_warehouse').value : 1) || 1;
           var stok = parseInt(document.getElementById('f_stock') ? document.getElementById('f_stock').value : 0) || 0;
           products.push({
             id: newId,
-            sku: (document.getElementById('f_sku') ? document.getElementById('f_sku').value : '') || 'NEW-' + String(newId).padStart(3, '0'),
-            name: (document.getElementById('f_name') ? document.getElementById('f_name').value : '') || 'Produk Baru',
+            sku: formValue('f_sku'),
+            name: formValue('f_name'),
             categoryId: parseInt(document.getElementById('f_category') ? document.getElementById('f_category').value : 1) || 1,
             supplierId: parseInt(document.getElementById('f_supplier') ? document.getElementById('f_supplier').value : 1) || 1,
-            price: parseInt(document.getElementById('f_price') ? document.getElementById('f_price').value : 0) || 0,
+            price: parseInt(formValue('f_price')) || 0,
             minStock: parseInt(document.getElementById('f_minStock') ? document.getElementById('f_minStock').value : 5) || 5,
-            status: (document.getElementById('f_status') ? document.getElementById('f_status').value : '') || 'Aktif',
+            status: formValue('f_status') || 'Aktif',
             createdAt: new Date().toISOString().split('T')[0]
           });
           // Add initial stock for the selected warehouse
@@ -90,9 +157,11 @@ export function handleAddKategori() {
     var saveBtn = document.getElementById('saveKategori');
     if (saveBtn) {
       saveBtn.addEventListener('click', function() {
+        clearFormErrors();
+        if (!validateRequired('k_name', 'Nama kategori')) { focusFirstError(); return; }
         categories.push({
           id: nextId(categories),
-          name: (document.getElementById('k_name') ? document.getElementById('k_name').value : '') || 'Kategori Baru',
+          name: formValue('k_name'),
           description: (document.getElementById('k_desc') ? document.getElementById('k_desc').value : '') || '',
           createdAt: new Date().toISOString().split('T')[0]
         });
@@ -118,10 +187,15 @@ export function handleAddSupplier() {
     var saveBtn = document.getElementById('saveSupplier');
     if (saveBtn) {
       saveBtn.addEventListener('click', function() {
+        clearFormErrors();
+        var ok = true;
+        ok = validateRequired('s_name', 'Nama supplier') && ok;
+        ok = validateRequired('s_pic', 'PIC') && ok;
+        if (!ok) { focusFirstError(); return; }
         suppliers.push({
           id: nextId(suppliers),
-          name: (document.getElementById('s_name') ? document.getElementById('s_name').value : '') || 'Supplier Baru',
-          pic: (document.getElementById('s_pic') ? document.getElementById('s_pic').value : '') || '',
+          name: formValue('s_name'),
+          pic: formValue('s_pic'),
           email: (document.getElementById('s_email') ? document.getElementById('s_email').value : '') || '',
           phone: (document.getElementById('s_phone') ? document.getElementById('s_phone').value : '') || '',
           createdAt: new Date().toISOString().split('T')[0]
@@ -148,13 +222,19 @@ export function handleAddGudang() {
     var saveBtn = document.getElementById('saveGudang');
     if (saveBtn) {
       saveBtn.addEventListener('click', function() {
+        clearFormErrors();
+        var ok = true;
+        ok = validateRequired('g_code', 'Kode gudang') && ok;
+        ok = validateRequired('g_name', 'Nama gudang') && ok;
+        ok = validateRequired('g_location', 'Lokasi') && ok;
+        if (!ok) { focusFirstError(); return; }
         var newId = nextId(warehouses);
         var gStatus = (document.getElementById('g_status') ? document.getElementById('g_status').value : '') || 'Aktif';
         warehouses.push({
           id: newId,
-          code: (document.getElementById('g_code') ? document.getElementById('g_code').value : '') || 'WH-' + String(newId).padStart(3, '0'),
-          name: (document.getElementById('g_name') ? document.getElementById('g_name').value : '') || 'Gudang Baru',
-          location: (document.getElementById('g_location') ? document.getElementById('g_location').value : '') || '',
+          code: formValue('g_code'),
+          name: formValue('g_name'),
+          location: formValue('g_location'),
           status: gStatus,
           createdAt: new Date().toISOString().split('T')[0]
         });
@@ -168,6 +248,9 @@ export function handleAddGudang() {
 // BARANG MASUK (with warehouse selection)
 // ======================
 export function handleAddBarangMasuk() {
+  if (suppliers.length === 0) { showToast('Belum ada supplier — tambahkan supplier terlebih dahulu', 'error'); return; }
+  if (warehouses.length === 0) { showToast('Belum ada gudang — tambahkan gudang terlebih dahulu', 'error'); return; }
+  if (products.length === 0) { showToast('Belum ada produk — tambahkan produk terlebih dahulu', 'error'); return; }
   var supOpts = suppliers.map(function(s) { return '<option value="' + s.id + '">' + s.name + '</option>'; }).join('');
   var whOpts = warehouses.map(function(w) { return '<option value="' + w.id + '">' + w.name + '</option>'; }).join('');
   var prodOpts = products.map(function(p) {
@@ -201,8 +284,9 @@ export function handleAddBarangMasuk() {
       addBtn.addEventListener('click', function(e) {
         e.stopPropagation();
         var pid = parseInt(document.getElementById('bm_product')?.value);
-        var qty = parseInt(document.getElementById('bm_qty')?.value) || 1;
+        var qty = parseInt(document.getElementById('bm_qty')?.value);
         if (!pid) { showToast('Pilih produk dulu', 'error'); return; }
+        if (!qty || qty <= 0) { showToast('Qty harus lebih dari 0', 'error'); return; }
         if (!getProduct(pid)) { showToast('Produk tidak ditemukan', 'error'); return; }
         if (window._bmItems.find(function(i) { return i.productId == pid; })) {
           showToast('Produk sudah ditambahkan', 'info'); return;
@@ -222,8 +306,11 @@ export function handleAddBarangMasuk() {
     var saveBtn = document.getElementById('saveBm');
     if (saveBtn) {
       saveBtn.addEventListener('click', function() {
+        clearFormErrors();
         var items = window._bmItems || [];
-        if (items.length === 0) { showToast('Tambahkan minimal 1 item', 'error'); return; }
+        if (items.length === 0) { showToast('Tambahkan minimal 1 item produk terlebih dahulu', 'error'); return; }
+        if (!hasSelectValue('bm_supplier', 'Supplier')) return;
+        if (!hasSelectValue('bm_warehouse', 'Gudang tujuan')) return;
         var whId = parseInt(document.getElementById('bm_warehouse')?.value) || 1;
         for (var i = 0; i < items.length; i++) {
           addStock(items[i].productId, whId, items[i].qty);
@@ -248,6 +335,8 @@ export function handleAddBarangMasuk() {
 // BARANG KELUAR (with warehouse selection)
 // ======================
 export function handleAddBarangKeluar() {
+  if (warehouses.length === 0) { showToast('Belum ada gudang — tambahkan gudang terlebih dahulu', 'error'); return; }
+  if (productStocks.length === 0) { showToast('Belum ada stok produk di gudang mana pun', 'error'); return; }
   var whOpts = warehouses.map(function(w) { return '<option value="' + w.id + '">' + w.name + '</option>'; }).join('');
   var today = new Date().toISOString().split('T')[0];
 
@@ -288,9 +377,10 @@ export function handleAddBarangKeluar() {
       addBtn.addEventListener('click', function(e) {
         e.stopPropagation();
         var pid = parseInt(document.getElementById('bk_product')?.value);
-        var qty = parseInt(document.getElementById('bk_qty')?.value) || 1;
+        var qty = parseInt(document.getElementById('bk_qty')?.value);
         var whId = parseInt(document.getElementById('bk_warehouse')?.value);
         if (!pid) { showToast('Pilih produk dulu', 'error'); return; }
+        if (!qty || qty <= 0) { showToast('Qty harus lebih dari 0', 'error'); return; }
         var ps = getProductStock(pid, whId);
         if (!ps || ps.stock < qty) { showToast('Stok tidak cukup', 'error'); return; }
         if (window._bkItems?.find(function(i) { return i.productId == pid; })) { showToast('Produk sudah ditambahkan', 'info'); return; }
@@ -308,8 +398,11 @@ export function handleAddBarangKeluar() {
     var saveBtn = document.getElementById('saveBk');
     if (saveBtn) {
       saveBtn.addEventListener('click', function() {
+        clearFormErrors();
         var items = window._bkItems || [];
-        if (items.length === 0) { showToast('Tambahkan minimal 1 item', 'error'); return; }
+        if (items.length === 0) { showToast('Tambahkan minimal 1 item produk terlebih dahulu', 'error'); return; }
+        if (!validateRequired('bk_penerima', 'Penerima/PIC')) { focusFirstError(); return; }
+        if (!hasSelectValue('bk_warehouse', 'Gudang asal')) return;
         var whId = parseInt(document.getElementById('bk_warehouse')?.value) || 1;
         for (var i = 0; i < items.length; i++) {
           addStock(items[i].productId, whId, -items[i].qty);
@@ -317,7 +410,7 @@ export function handleAddBarangKeluar() {
         barangKeluar.push({
           id: nextId(barangKeluar),
           date: document.getElementById('bk_date')?.value || today,
-          penerima: document.getElementById('bk_penerima')?.value || '-',
+          penerima: formValue('bk_penerima'),
           warehouseId: whId,
           items: items.slice(),
           ref: document.getElementById('bk_ref')?.value || getNextRef('bk'),
@@ -334,6 +427,8 @@ export function handleAddBarangKeluar() {
 // STOCK ADJUSTMENT (per warehouse)
 // ======================
 export function handleAddStockAdjustment() {
+  if (warehouses.length === 0) { showToast('Belum ada gudang — tambahkan gudang terlebih dahulu', 'error'); return; }
+  if (productStocks.length === 0) { showToast('Belum ada stok produk di gudang mana pun — tambahkan barang masuk terlebih dahulu', 'error'); return; }
   var whOpts = warehouses.map(function(w) { return '<option value="' + w.id + '">' + w.name + '</option>'; }).join('');
   var today = new Date().toISOString().split('T')[0];
 
@@ -388,9 +483,18 @@ export function handleAddStockAdjustment() {
     var saveBtn = document.getElementById('saveSa');
     if (saveBtn) {
       saveBtn.addEventListener('click', function() {
-        var whId = parseInt(document.getElementById('sa_warehouse')?.value) || 1;
-        var productId = parseInt(document.getElementById('sa_product')?.value) || 1;
-        var fisik = parseInt(document.getElementById('sa_fisik')?.value) || 0;
+        clearFormErrors();
+        var whVal = document.getElementById('sa_warehouse')?.value;
+        var prodVal = document.getElementById('sa_product')?.value;
+        var fisikEl = document.getElementById('sa_fisik');
+        var fisikRaw = fisikEl ? fisikEl.value : '';
+        if (!whVal) { hasSelectValue('sa_warehouse', 'Gudang'); return; }
+        if (!prodVal) { markError('sa_product', 'Pilih produk terlebih dahulu'); focusFirstError(); return; }
+        if (fisikRaw.trim() === '') { markError('sa_fisik', 'Stok fisik wajib diisi'); focusFirstError(); return; }
+        var fisik = Number(fisikRaw);
+        if (isNaN(fisik)) { markError('sa_fisik', 'Stok fisik harus berupa angka'); focusFirstError(); return; }
+        var whId = parseInt(whVal);
+        var productId = parseInt(prodVal);
         var sistem = parseInt(document.getElementById('sa_sistem')?.value) || 0;
         stockAdjustments.push({
           id: nextId(stockAdjustments),
@@ -413,6 +517,8 @@ export function handleAddStockAdjustment() {
 // STOCK TRANSFER (proper multi-warehouse)
 // ======================
 export function handleAddStockTransfer() {
+  if (warehouses.length < 2) { showToast('Butuh minimal 2 gudang untuk melakukan transfer stok', 'error'); return; }
+  if (productStocks.length === 0) { showToast('Belum ada stok produk untuk ditransfer', 'error'); return; }
   var whOpts = warehouses.map(function(w) { return '<option value="' + w.id + '">' + w.name + '</option>'; }).join('');
   var firstWhId = warehouses.length > 0 ? warehouses[0].id : 0;
   var today = new Date().toISOString().split('T')[0];
@@ -454,9 +560,10 @@ export function handleAddStockTransfer() {
       addBtn.addEventListener('click', function(e) {
         e.stopPropagation();
         var pid = parseInt(document.getElementById('st_product')?.value);
-        var qty = parseInt(document.getElementById('st_qty')?.value) || 1;
+        var qty = parseInt(document.getElementById('st_qty')?.value);
         var fromWhId = parseInt(document.getElementById('st_from')?.value);
         if (!pid || !fromWhId) { showToast('Pilih produk dulu', 'error'); return; }
+        if (!qty || qty <= 0) { showToast('Qty harus lebih dari 0', 'error'); return; }
         var ps = getProductStock(pid, fromWhId);
         if (!ps || ps.stock < qty) { showToast('Stok tidak cukup', 'error'); return; }
         if (items.find(function(i) { return i.productId == pid; })) { showToast('Produk sudah ditambahkan', 'info'); return; }
@@ -513,12 +620,18 @@ export function handleAddUser() {
     var saveBtn = document.getElementById('saveUser');
     if (saveBtn) {
       saveBtn.addEventListener('click', function() {
+        clearFormErrors();
+        var ok = true;
+        ok = validateRequired('u_name', 'Nama') && ok;
+        ok = validateEmail('u_email', 'Email') && ok;
+        ok = validateMinLength('u_password', 'Password', 6) && ok;
+        if (!ok) { focusFirstError(); return; }
         users.push({
           id: nextId(users),
-          name: document.getElementById('u_name')?.value || 'User Baru',
-          email: document.getElementById('u_email')?.value || '',
-          role: document.getElementById('u_role')?.value || 'Staff',
-          status: document.getElementById('u_status')?.value || 'Active',
+          name: formValue('u_name'),
+          email: formValue('u_email'),
+          role: formValue('u_role') || 'Staff',
+          status: formValue('u_status') || 'Active',
           lastLogin: '-',
           createdAt: new Date().toISOString().split('T')[0]
         });
