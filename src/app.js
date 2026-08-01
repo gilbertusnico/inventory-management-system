@@ -52,10 +52,6 @@ function buildLayout() {
           '<button class="menu-toggle-btn" id="menuToggle" aria-label="Open menu"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>' +
           '<span class="breadcrumb-item">Dashboard</span>' +
         '</div>' +
-        '<div class="header-actions">' +
-          '<div class="search-bar"><svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input type="text" class="search-input" placeholder="Cari..." id="globalSearch" /></div>' +
-          '<button class="btn-icon notification-btn" id="notifBtn" aria-label="Notifications">' + icon('bell') + '<span class="notification-dot"></span></button>' +
-        '</div>' +
       '</header>' +
       '<main class="page-content" id="pageContent"></main>' +
     '</div>' +
@@ -157,7 +153,10 @@ function updateBreadcrumb(route) {
   var toggleBtn = breadcrumb.querySelector('.menu-toggle-btn');
   var menuBtn = toggleBtn ? toggleBtn.outerHTML : '<button class="menu-toggle-btn" id="menuToggle" aria-label="Open menu"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>';
   if (info) {
-    breadcrumb.innerHTML = menuBtn + '<span class="breadcrumb-item">' + info.group + '</span><span class="breadcrumb-item">' + info.label + '</span>';
+    var crumbs = info.group === info.label
+      ? '<span class="breadcrumb-item">' + info.label + '</span>'
+      : '<span class="breadcrumb-item">' + info.group + '</span><span class="breadcrumb-item">' + info.label + '</span>';
+    breadcrumb.innerHTML = menuBtn + crumbs;
   } else {
     breadcrumb.innerHTML = menuBtn + route.replace('#/', '').split('/').map(function(p) {
       return '<span class="breadcrumb-item">' + p.charAt(0).toUpperCase() + p.slice(1) + '</span>';

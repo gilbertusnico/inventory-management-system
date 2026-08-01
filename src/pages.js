@@ -257,7 +257,7 @@ function createBarChartCustom(containerId, data, width) {
   if (!container) return;
   const movement = getMonthlyMovement();
   const height = 260;
-  const pad = { top: 20, right: 20, bottom: 40, left: 50 };
+  const pad = { top: 34, right: 20, bottom: 40, left: 50 };
   const chartW = width - pad.left - pad.right;
   const chartH = height - pad.top - pad.bottom;
   const maxVal = Math.max(...movement.flatMap(m => [m.masuk, m.keluar]), 1);
@@ -287,11 +287,12 @@ function createBarChartCustom(containerId, data, width) {
   });
 
   html += `<line x1="${pad.left}" y1="${pad.top}" x2="${pad.left}" y2="${pad.top + chartH}" stroke="#e5e7eb" stroke-width="1"/>
-    <line x1="${pad.left}" y1="${pad.top + chartH}" x2="${pad.left + chartW}" y2="${pad.top + chartH}" stroke="#e5e7eb" stroke-width="1"/>
-    <rect x="${pad.left + chartW - 140}" y="${pad.top + 4}" width="60" height="10" rx="2" fill="#1144F9" opacity="0.85"/>
-    <text x="${pad.left + chartW - 75}" y="${pad.top + 13}" font-size="10" fill="#666">Masuk</text>
-    <rect x="${pad.left + chartW - 60}" y="${pad.top + 4}" width="60" height="10" rx="2" fill="#22c55e" opacity="0.85"/>
-    <text x="${pad.left + chartW + 5}" y="${pad.top + 13}" font-size="10" fill="#666">Keluar</text>`;
+    <line x1="${pad.left}" y1="${pad.top + chartH}" x2="${pad.left + chartW}" y2="${pad.top + chartH}" stroke="#e5e7eb" stroke-width="1"/>` +
+    // Legend (top-right, compact boxes with text)
+    `<rect x="${pad.left + chartW - 118}" y="4" width="12" height="12" rx="2" fill="#1144F9" opacity="0.85"/>
+    <text x="${pad.left + chartW - 102}" y="14" font-size="10" fill="#666">Masuk</text>
+    <rect x="${pad.left + chartW - 52}" y="4" width="12" height="12" rx="2" fill="#22c55e" opacity="0.85"/>
+    <text x="${pad.left + chartW - 36}" y="14" font-size="10" fill="#666">Keluar</text>`;
 
   container.innerHTML = `<svg width="100%" height="${height}" viewBox="0 0 ${width} ${height}" style="overflow:visible">${gridLines}${html}</svg>`;
 }
