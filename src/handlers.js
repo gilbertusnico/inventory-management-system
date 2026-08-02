@@ -826,8 +826,51 @@ export function handleDelete(action, id) {
   var arr = dataMap[type];
   if (!arr) { showToast('Hapus tidak dikenali', 'error'); return; }
 
+  // ======================
+  // Pengecekan stok cukup SEBELUM void (mencegah stok negatif)
+  // BM: void mengurangi stok di gudang penerima
+  // ST: void menarik stok dari gudang tujuan kembali ke gudang asal
+  // ======================
+  if (type === 'bm') {
+    var bm = barangMasuk.find(function(x) { return x.id == id; });
+    if (bm) {
+      for (var si = 0; si < bm.items.length; si++) {
+        var it = bm.items[si];
+        var ps = getProductStock(it.productId, bm.warehouseId);
+        var stok = ps ? ps.stock : 0;
+        if (stok < it.qty) {
+          var pn = getProduct(it.productId);
+          var wn = getWarehouse(bm.warehouseId);
+          showToast('Tidak bisa menghapus Barang Masuk #' + id + ': stok "' + (pn ? pn.name : '#' + it.productId) + '" di ' + (wn ? wn.name : 'gudang') + ' tersisa ' + stok + ' pcs, tidak cukup untuk membatalkan ' + it.qty + ' pcs. Barang ini kemungkinan sudah dikeluarkan/digunakan.', 'error');
+          return;
+        }
+      }
+    }
+  } else if (type === 'st') {
+    var st = stockTransfers.find(function(x) { return x.id == id; });
+    if (st) {
+      for (var si = 0; si < st.items.length; si++) {
+        var it = st.items[si];
+        var ps = getProductStock(it.productId, st.toWarehouseId);
+        var stok = ps ? ps.stock : 0;
+        if (stok < it.qty) {
+          var pn = getProduct(it.productId);
+          var wn = getWarehouse(st.toWarehouseId);
+          showToast('Tidak bisa void Transfer Stok #' + id + ': stok "' + (pn ? pn.name : '#' + it.productId) + '" di ' + (wn ? wn.name : 'gudang tujuan') + ' tersisa ' + stok + ' pcs, tidak cukup untuk mengembalikan ' + it.qty + ' pcs ke gudang asal.', 'error');
+          return;
+        }
+      }
+    }
+  }
+
+  // Extra info text for stock reversals
+  var extraInfo = '';
+  if (type === 'bm') extraInfo = '<br><span style="color:#f59e0b;font-size:13px">Stok barang akan dikembalikan ke kondisi sebelum barang masuk (stok berkurang).</span>';
+  else if (type === 'bk') extraInfo = '<br><span style="color:#f59e0b;font-size:13px">Stok barang akan dikembalikan ke kondisi sebelum barang keluar (stok bertambah).</span>';
+  else if (type === 'sa') extraInfo = '<br><span style="color:#f59e0b;font-size:13px">Stok akan dikembalikan ke stok sistem sebelum adjustment.</span>';
+  else if (type === 'st') extraInfo = '<br><span style="color:#f59e0b;font-size:13px">Stok akan dikembalikan ke gudang asal dan ditarik dari gudang tujuan (void transfer).</span>';
   showModal('Konfirmasi Hapus',
-    '<p style="font-size:14px;line-height:1.6">Apakah Anda yakin ingin menghapus <strong>' + (name || 'item') + '</strong>?<br><span style="color:#999">Tindakan ini tidak dapat dibatalkan.</span></p>',
+    '<p style="font-size:14px;line-height:1.6">Apakah Anda yakin ingin menghapus <strong>' + (name || 'item') + '</strong>?' + extraInfo + '<br><span style="color:#999">Tindakan ini tidak dapat dibatalkan.</span></p>',
     '<button class="btn btn-secondary" onclick="closeModal()">Batal</button><button class="btn btn-danger" id="confirmDelete">Ya, Hapus</button>');
 
   setTimeout(function() {
@@ -857,6 +900,15 @@ export function handleDelete(action, id) {
         } else if (type === 'sa') {
           var sa = stockAdjustments.find(function(x) { return x.id == id; });
           if (sa) setStock(sa.productId, sa.warehouseId, sa.sistem);
+        } else if (type === 'st') {
+          // Void transfer: kembalikan stok ke gudang asal, tarik dari gudang tujuan
+          var st = stockTransfers.find(function(x) { return x.id == id; });
+          if (st) {
+            for (var i = 0; i < st.items.length; i++) {
+              addStock(st.items[i].productId, st.fromWarehouseId, st.items[i].qty);
+              addStock(st.items[i].productId, st.toWarehouseId, -st.items[i].qty);
+            }
+          }
         }
         // Remove item
         var idx = arr.findIndex(function(item) { return item.id == id; });
