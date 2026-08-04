@@ -2,7 +2,7 @@
 // INVENTARIS — Main Application Entry
 // ============================================
 import { icon } from './icons.js';
-import { products, categories, suppliers, warehouses, barangMasuk, barangKeluar, stockAdjustments, stockTransfers, stockOpname, users, getCategory, getSupplier, getWarehouse, getProduct, getBarangMasuk, getBarangKeluar, updateCounts } from './data.js';
+import { products, categories, suppliers, warehouses, barangMasuk, barangKeluar, stockAdjustments, stockTransfers, users, getCategory, getSupplier, getWarehouse, getProduct, getBarangMasuk, getBarangKeluar, updateCounts } from './data.js';
 import { ROUTE_LABELS, NAV_GROUPS } from './config.js';
 import { renderDashboard, renderProduk, renderKategori, renderSupplier, renderGudang, renderBarangMasuk, renderBarangKeluar, renderStockAdjustment, renderStockTransfer, renderStockOpname, renderReportStok, renderReportMasuk, renderReportKeluar, renderReportMutasi, renderUsers, renderRoles, showModal, closeModal, showToast } from './pages.js';
 import { handleAddMaster, handleAddBarangMasuk, handleAddBarangKeluar, handleAddStockAdjustment, handleAddStockTransfer, handleAddUser, handleAddKategori, handleAddSupplier, handleAddGudang, handleEdit, handleDelete, handleDetail } from './handlers.js';
@@ -95,9 +95,10 @@ function getNavItems(groupId) {
 // ======================
 function navigate(route) {
   if (!route || route === '#') route = '#/dashboard';
-  // Reset pagination & sort only on navigation
+  // Reset pagination, sort, and search on navigation
   window._currentPage = 1;
   window._currentSort = { key: null, asc: true };
+  window._searchTerm = '';
   window.location.hash = route;
 }
 

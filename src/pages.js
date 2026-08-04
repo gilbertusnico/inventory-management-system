@@ -2,7 +2,7 @@
 // INVENTARIS — Page Renderers
 // ============================================
 import { icon } from './icons.js';
-import { products, categories, suppliers, warehouses, barangMasuk, barangKeluar, stockAdjustments, stockTransfers, stockOpname, users, permissions, productStocks, getProductStockRows, getCategory, getSupplier, getWarehouse, getProduct, getUser, getBarangMasuk, getBarangKeluar, getLowStockProducts, getProductsByWarehouse, getTotalStock, getAllProductStocks, formatCurrency, formatDate, formatDateTime } from './data.js';
+import { products, categories, suppliers, warehouses, barangMasuk, barangKeluar, stockAdjustments, stockTransfers, users, permissions, productStocks, getProductStockRows, getCategory, getSupplier, getWarehouse, getProduct, getUser, getBarangMasuk, getBarangKeluar, getLowStockProducts, getProductsByWarehouse, getTotalStock, getAllProductStocks, getStockOpname, formatCurrency, formatDate, formatDateTime } from './data.js';
 import { createBarChart, createDonutChart, createLineChart, getMonthlyMovement, getStockDistribution } from './charts.js';
 import { getDateRange, inRange, filterByDate, getLatest, buildMonthlySeries, buildMutasiSeries, reportFilterBar } from './report-utils.js';
 function getPage() { return window._currentPage || 1; }
@@ -514,10 +514,11 @@ export function renderStockTransfer() {
 
 // --- STOCK OPNAME ---
 export function renderStockOpname() {
-  const totalItems = stockOpname.length;
-  const sesuai = stockOpname.filter(s => s.sistem === s.fisik).length;
-  const tidakSesuai = stockOpname.filter(s => s.sistem !== s.fisik).length;
-  const totalSelisih = stockOpname.reduce((s, o) => s + Math.abs(o.sistem - o.fisik), 0);
+  const opnameData = getStockOpname();
+  const totalItems = opnameData.length;
+  const sesuai = opnameData.filter(s => s.sistem === s.fisik).length;
+  const tidakSesuai = opnameData.filter(s => s.sistem !== s.fisik).length;
+  const totalSelisih = opnameData.reduce((s, o) => s + Math.abs(o.sistem - o.fisik), 0);
 
   const cols = [
     { label: 'Produk', key: 'productId', render: r => getProduct(r.productId)?.name || '-' },
@@ -553,7 +554,7 @@ export function renderStockOpname() {
         <div class="summary-card-value" style="color:#ef4444">${totalSelisih}</div>
       </div>
     </div>` +
-    filterBar() + renderTable(stockOpname, cols, getPage());
+    filterBar() + renderTable(opnameData, cols, getPage());
 }
 
 // --- REPORTS ---

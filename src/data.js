@@ -129,20 +129,56 @@ export const stockTransfers = [
   { id: 3, date: daysAgo(14), fromWarehouseId: 1, toWarehouseId: 2, items: [{ productId: 7, qty: 5 }], ref: 'TRF-003' },
 ];
 
-export const stockOpname = [
-  { id: 1, productId: 1, warehouseId: 2, sistem: 12, fisik: 12 },
-  { id: 2, productId: 2, warehouseId: 2, sistem: 8, fisik: 7 },
-  { id: 3, productId: 3, warehouseId: 1, sistem: 25, fisik: 25 },
-  { id: 4, productId: 4, warehouseId: 1, sistem: 2, fisik: 2 },
-  { id: 5, productId: 5, warehouseId: 3, sistem: 15, fisik: 14 },
-  { id: 6, productId: 7, warehouseId: 1, sistem: 30, fisik: 30 },
-  { id: 7, productId: 8, warehouseId: 2, sistem: 50, fisik: 48 },
-  { id: 8, productId: 10, warehouseId: 1, sistem: 4, fisik: 4 },
-  { id: 9, productId: 11, warehouseId: 1, sistem: 40, fisik: 40 },
-  { id: 10, productId: 14, warehouseId: 2, sistem: 200, fisik: 195 },
-  { id: 11, productId: 15, warehouseId: 1, sistem: 35, fisik: 35 },
-  { id: 12, productId: 17, warehouseId: 2, sistem: 3, fisik: 3 },
-];
+// Stock Opname — di-generate dinamis dari productStocks
+// Fisik user disimpan di map terpisah dan dipulihkan dari localStorage
+var _stockOpnameFisik = {};
+
+function loadFisikMap() {
+  try {
+    var saved = localStorage.getItem(STORAGE_PREFIX + 'stockOpnameFisik');
+    if (saved) {
+      _stockOpnameFisik = JSON.parse(saved);
+    }
+  } catch (e) {
+    _stockOpnameFisik = {};
+  }
+}
+
+function saveFisikMap() {
+  try {
+    localStorage.setItem(STORAGE_PREFIX + 'stockOpnameFisik', JSON.stringify(_stockOpnameFisik));
+  } catch (e) {}
+}
+
+loadFisikMap();
+
+export function getStockOpname() {
+  var map = {};
+  var result = [];
+  var idCounter = 1;
+
+  for (var i = 0; i < productStocks.length; i++) {
+    var ps = productStocks[i];
+    var key = ps.productId + '-' + ps.warehouseId;
+    var fisik = _stockOpnameFisik.hasOwnProperty(key) ? _stockOpnameFisik[key] : ps.stock;
+
+    result.push({
+      id: idCounter++,
+      productId: ps.productId,
+      warehouseId: ps.warehouseId,
+      sistem: ps.stock,
+      fisik: fisik,
+    });
+    map[key] = true;
+  }
+
+  return result;
+}
+
+export function setStockOpnameFisik(productId, warehouseId, fisik) {
+  _stockOpnameFisik[productId + '-' + warehouseId] = fisik;
+  saveFisikMap();
+}
 
 export const users = [
   { id: 1, name: 'Admin User', email: 'admin@inventaris.com', role: 'Owner', status: 'Active', lastLogin: daysAgo(0), createdAt: '2024-12-01' },
@@ -351,7 +387,6 @@ var ALL_DATASETS = [
   { key: 'barangKeluar', data: barangKeluar },
   { key: 'stockAdjustments', data: stockAdjustments },
   { key: 'stockTransfers', data: stockTransfers },
-  { key: 'stockOpname', data: stockOpname },
   { key: 'users', data: users },
 ];
 
