@@ -514,7 +514,15 @@ export function renderStockTransfer() {
 
 // --- STOCK OPNAME ---
 export function renderStockOpname() {
-  const opnameData = getStockOpname();
+  let opnameData = getStockOpname();
+  const search = getSearch();
+  if (search) {
+    const t = search.toLowerCase();
+    opnameData = opnameData.filter(x =>
+      (getProduct(x.productId)?.name || '').toLowerCase().includes(t) ||
+      (getWarehouse(x.warehouseId)?.name || '').toLowerCase().includes(t)
+    );
+  }
   const totalItems = opnameData.length;
   const sesuai = opnameData.filter(s => s.sistem === s.fisik).length;
   const tidakSesuai = opnameData.filter(s => s.sistem !== s.fisik).length;
