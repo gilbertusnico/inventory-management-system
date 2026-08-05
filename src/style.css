@@ -642,6 +642,13 @@ ul, ol { list-style: none; }
   margin-bottom: 16px;
 }
 
+.dashboard-grid-2 {
+  display: grid;
+  grid-template-columns: 1.5fr 2fr;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
 .dashboard-grid-full {
   grid-column: 1 / -1;
 }
