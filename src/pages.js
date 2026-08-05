@@ -214,7 +214,7 @@ export function renderDashboard() {
         <div class="alert-list">
           ${lowStock.length > 0 ? lowStock.slice(0, 6).map(p => `
             <div class="alert-item">
-              <span class="alert-item-name">${p.name}</span>
+              <span class="alert-item-name">${p.name}</span> 
               <div><span class="alert-item-stock">${p.stock}</span> <span style="font-size:11px;color:#999">/ ${p.minStock}</span></div>
             </div>
           `).join('') : '<p style="text-align:center;padding:20px;color:#999">Semua stok aman ✅</p>'}
