@@ -1245,7 +1245,7 @@ tbody tr:last-child td {
   font-size: 11px;
   color: var(--color-text-muted);
   text-transform: uppercase;
-  letter-spacing: 0.3px;
+  letter-spacing: 0.2px;
   margin-bottom: 4px;
 }
 
