@@ -641,12 +641,6 @@ ul, ol { list-style: none; }
   gap: 16px;
   margin-bottom: 16px;
 }
-.dashboard-grid-2 {
-  display: grid;
-  grid-template-columns: 1.5fr 2fr;
-  gap: 16px;
-  margin-bottom: 16px;
-}
 
 .dashboard-grid-full {
   grid-column: 1 / -1;
@@ -1234,7 +1228,7 @@ tbody tr:last-child td {
 /* --- Summary Cards (for reports) --- */
 .summary-cards {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 12px;
   margin-bottom: 20px;
 }
@@ -1251,7 +1245,7 @@ tbody tr:last-child td {
   font-size: 11px;
   color: var(--color-text-muted);
   text-transform: uppercase;
-  letter-spacing: 0.2px;
+  letter-spacing: 0.3px;
   margin-bottom: 4px;
 }
 
