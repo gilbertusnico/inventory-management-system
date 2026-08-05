@@ -221,7 +221,7 @@ export function renderDashboard() {
         </div>
       </div>
     </div>
-    <div class="dashboard-grid">
+    <div class="dashboard-grid dashboard-grid-wide">
       <div class="card">
         <div class="card-header">
           <div>
@@ -544,7 +544,7 @@ export function renderStockOpname() {
   ];
 
   return pageHeader('Stock Opname', 'Pencocokan stok fisik dengan sistem') +
-    `<div class="summary-cards">
+    `<div class="summary-cards summary-cards-four">
       <div class="summary-card">
         <div class="summary-card-label">Total Item</div>
         <div class="summary-card-value">${totalItems}</div>

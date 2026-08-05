@@ -642,6 +642,11 @@ ul, ol { list-style: none; }
   margin-bottom: 16px;
 }
 
+/* Distribusi Stok + Aktivitas Terbaru: distribusi lebih sempit, aktivitas lebih lebar */
+.dashboard-grid-wide {
+  grid-template-columns: 1.5fr 2fr;
+}
+
 .dashboard-grid-full {
   grid-column: 1 / -1;
 }
@@ -1231,6 +1236,11 @@ tbody tr:last-child td {
   grid-template-columns: repeat(3, 1fr);
   gap: 12px;
   margin-bottom: 20px;
+}
+
+/* Stock Opname: 4 card ringkasan dalam satu baris */
+.summary-cards-four {
+  grid-template-columns: repeat(4, 1fr);
 }
 
 .summary-card {
