@@ -221,7 +221,7 @@ export function renderDashboard() {
         </div>
       </div>
     </div>
-    <div class="dashboard-grid-2">
+    <div class="dashboard-grid">
       <div class="card">
         <div class="card-header">
           <div>
