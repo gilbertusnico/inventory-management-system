@@ -181,11 +181,11 @@ export function setStockOpnameFisik(productId, warehouseId, fisik) {
 }
 
 export const users = [
-  { id: 1, name: 'Admin User', email: 'admin@inventaris.com', role: 'Owner', status: 'Active', lastLogin: daysAgo(0), createdAt: '2024-12-01' },
-  { id: 2, name: 'Dewi Sartika', email: 'dewi@inventaris.com', role: 'Admin', status: 'Active', lastLogin: daysAgo(1), createdAt: '2024-12-05' },
-  { id: 3, name: 'Bayu Pratama', email: 'bayu@inventaris.com', role: 'Staff', status: 'Active', lastLogin: daysAgo(3), createdAt: '2024-12-10' },
-  { id: 4, name: 'Citra Ayu', email: 'citra@inventaris.com', role: 'Staff', status: 'Inactive', lastLogin: daysAgo(30), createdAt: '2024-12-15' },
-  { id: 5, name: 'Doni Saputra', email: 'doni@inventaris.com', role: 'Admin', status: 'Active', lastLogin: daysAgo(0), createdAt: '2024-12-20' },
+  { id: 1, name: 'Admin User', email: 'admin@stockfolio.com', role: 'Owner', status: 'Active', lastLogin: daysAgo(0), createdAt: '2024-12-01' },
+  { id: 2, name: 'Dewi Sartika', email: 'dewi@stockfolio.com', role: 'Admin', status: 'Active', lastLogin: daysAgo(1), createdAt: '2024-12-05' },
+  { id: 3, name: 'Bayu Pratama', email: 'bayu@stockfolio.com', role: 'Staff', status: 'Active', lastLogin: daysAgo(3), createdAt: '2024-12-10' },
+  { id: 4, name: 'Citra Ayu', email: 'citra@stockfolio.com', role: 'Staff', status: 'Inactive', lastLogin: daysAgo(30), createdAt: '2024-12-15' },
+  { id: 5, name: 'Doni Saputra', email: 'doni@stockfolio.com', role: 'Admin', status: 'Active', lastLogin: daysAgo(0), createdAt: '2024-12-20' },
 ];
 
 export const permissions = {

@@ -1,5 +1,5 @@
 // ============================================
-// INVENTARIS — Export PDF Utilities
+// StockFolio — Export PDF Utilities
 // ============================================
 import { jsPDF } from 'jspdf';
 import { autoTable } from 'jspdf-autotable';
@@ -15,12 +15,12 @@ import { getDateRange, filterByDate, buildMutasiSeries } from './report-utils.js
 function header(doc, title, subtitle) {
   var w = doc.internal.pageSize.getWidth();
   // Top bar
-  doc.setFillColor(17, 68, 249);
+  doc.setFillColor(37, 99, 235);
   doc.rect(0, 0, w, 28, 'F');
   doc.setTextColor(255);
   doc.setFontSize(14);
   doc.setFont('helvetica', 'bold');
-  doc.text('INVENTARIS', 14, 18);
+  doc.text('StockFolio', 14, 18);
   doc.setFontSize(9);
   doc.text(title + (subtitle ? ' - ' + subtitle : ''), w - 14, 18, { align: 'right' });
 
@@ -65,7 +65,7 @@ function footer(doc, pageNumber) {
   doc.line(14, doc.internal.pageSize.getHeight() - 18, w - 14, doc.internal.pageSize.getHeight() - 18);
   doc.setTextColor(150);
   doc.setFontSize(7);
-  doc.text('Laporan Inventaris — Halaman ' + pageNumber, 14, doc.internal.pageSize.getHeight() - 10);
+  doc.text('StockFolio | Powered by  Overkreatif | Halaman ' + pageNumber, 14, doc.internal.pageSize.getHeight() - 10);
   doc.text('Dicetak ' + new Date().toLocaleString('id-ID'), w - 14, doc.internal.pageSize.getHeight() - 10, { align: 'right' });
 }
 
@@ -73,7 +73,7 @@ function autoTableOptions(startY) {
   return {
     startY: startY,
     styles: { fontSize: 7.5, cellPadding: 3, textColor: [51, 51, 51], overflow: 'linebreak' },
-    headStyles: { fillColor: [17, 68, 249], textColor: 255, fontStyle: 'bold', fontSize: 7.5 },
+    headStyles: { fillColor: [37, 99, 235], textColor: 255, fontStyle: 'bold', fontSize: 7.5 },
     alternateRowStyles: { fillColor: [245, 247, 255] },
     margin: { left: 14, right: 14, top: 40, bottom: 22 },
     didDrawPage: function(data) {

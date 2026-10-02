@@ -296,7 +296,7 @@ export function handleAddBarangMasuk() {
           var p2 = getProduct(i.productId);
           return '<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 8px;margin:2px 0;border-radius:4px;background:#f9fafb">' +
             '<span style="font-weight:500">' + (p2 ? p2.name : '# ' + i.productId) + '</span>' +
-            '<span style="font-weight:600;color:#1144F9">' + i.qty + ' pcs</span></div>';
+            '<span style="font-weight:600;color:#2563EB">' + i.qty + ' pcs</span></div>';
         }).join('');
       });
     }

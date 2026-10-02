@@ -2,7 +2,7 @@
 // INVENTARIS — Configuration & Constants
 // ============================================
 
-export const APP_NAME = 'Inventaris';
+export const APP_NAME = 'StockFolio';
 export const ITEMS_PER_PAGE = 10;
 
 export const ROUTES = {

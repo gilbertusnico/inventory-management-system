@@ -1,24 +1,24 @@
 /* ==========================================
-   INVENTARIS — Design System & Global Styles
+  StockFolio — Design System & Global Styles
    ========================================== */
 
 /* --- CSS Custom Properties (Design Tokens) --- */
 :root {
   /* Colors */
-  --color-primary: #1144F9;
-  --color-primary-hover: #0d37d4;
-  --color-primary-light: #eef1ff;
-  --color-bg: #EEEFF3;
+  --color-primary: #2563EB;
+  --color-primary-hover: #1E40AF;
+  --color-primary-light: #eff6ff;
+  --color-bg: #ffffff;
   --color-surface: #ffffff;
-  --color-sidebar-bg: #111214;
-  --color-sidebar-hover: #1c1d20;
-  --color-sidebar-active: #1c1d20;
+  --color-sidebar-bg: #0F172A;
+  --color-sidebar-hover: #111827;
+  --color-sidebar-active: #2563EB;
   --color-text: #111111;
   --color-text-secondary: #666666;
   --color-text-muted: #999999;
   --color-text-sidebar: #8a8b91;
   --color-text-sidebar-active: #ffffff;
-  --color-border: #E3E5EA;
+  --color-border: #E2E8F0;
   --color-border-light: #f0f0f0;
   --color-success: #22c55e;
   --color-success-bg: #f0fdf4;
@@ -290,6 +290,12 @@ ul, ol { list-style: none; }
   color: var(--color-text-sidebar);
 }
 
+.sidebar-footer-brand {
+  margin: 10px 0 0 42px;
+  color: var(--color-text-sidebar);
+  font-size: 10px;
+}
+
 /* --- Main Content Area --- */
 .main {
   flex: 1;
@@ -368,7 +374,7 @@ ul, ol { list-style: none; }
 
 .search-bar:focus-within {
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(17, 68, 249, 0.1);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
 }
 
 .search-icon {
@@ -467,12 +473,12 @@ ul, ol { list-style: none; }
 .btn-primary {
   background: var(--color-primary);
   color: white;
-  box-shadow: 0 1px 2px rgba(17, 68, 249, 0.2);
+  box-shadow: 0 1px 2px rgba(37, 99, 235, 0.2);
 }
 
 .btn-primary:hover {
   background: var(--color-primary-hover);
-  box-shadow: 0 2px 6px rgba(17, 68, 249, 0.3);
+  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.3);
 }
 
 .btn-secondary {
@@ -869,7 +875,7 @@ tbody tr:last-child td {
 .form-select:focus,
 .form-textarea:focus {
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(17, 68, 249, 0.1);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
 }
 
 .form-input::placeholder {
@@ -992,7 +998,7 @@ tbody tr:last-child td {
 
 .date-input:focus {
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(17, 68, 249, 0.12);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
 }
 
 .report-actions {

@@ -6,7 +6,7 @@ import { warehouses, productStocks, products, barangMasuk, barangKeluar } from '
 export function createBarChart(containerId, data, options = {}) {
   const container = document.getElementById(containerId);
   if (!container) return;
-  const { width = container.clientWidth || 600, height = 280, barColor = '#1144F9', labelColor = '#999' } = options;
+  const { width = container.clientWidth || 600, height = 280, barColor = '#2563EB', labelColor = '#999' } = options;
   const pad = { top: 20, right: 20, bottom: 40, left: 50 };
   const chartW = width - pad.left - pad.right;
   const chartH = height - pad.top - pad.bottom;
@@ -54,7 +54,7 @@ export function createDonutChart(containerId, data, options = {}) {
   const cy = size / 2;
   const r = (size - strokeWidth) / 2;
   const total = data.reduce((s, d) => s + d.value, 0) || 1;
-  const colors = ['#1144F9', '#22c55e', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6'];
+  const colors = ['#2563EB', '#22c55e', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6'];
   let cumulative = 0;
   let segments = '';
   let legendItems = '';
@@ -93,7 +93,7 @@ export function createDonutChart(containerId, data, options = {}) {
 export function createLineChart(containerId, data, options = {}) {
   const container = document.getElementById(containerId);
   if (!container) return;
-  const { width = container.clientWidth || 600, height = 280, lineColor = '#1144F9', labelColor = '#999' } = options;
+  const { width = container.clientWidth || 600, height = 280, lineColor = '#2563EB', labelColor = '#999' } = options;
   const pad = { top: 20, right: 20, bottom: 40, left: 50 };
   const chartW = width - pad.left - pad.right;
   const chartH = height - pad.top - pad.bottom;
@@ -180,7 +180,7 @@ export function getStockDistribution() {
   if (!warehouses || warehouses.length === 0) {
     return [{ label: 'Belum ada gudang', value: 1, color: '#ccc' }];
   }
-  var colors = ['#1144F9', '#22c55e', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316', '#06b6d4'];
+  var colors = ['#2563EB', '#22c55e', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316', '#06b6d4'];
   return warehouses.map(function(w, i) {
     var total = 0;
     for (var j = 0; j < productStocks.length; j++) {

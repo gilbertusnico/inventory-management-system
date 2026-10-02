@@ -298,7 +298,7 @@ function createBarChartCustom(containerId, movement, width) {
     const keluarH = (m.keluar / maxVal) * chartH;
     const x1 = cx - barW - 2;
     const x2 = cx + 2;
-    html += `<rect x="${x1}" y="${pad.top + chartH - masukH}" width="${barW}" height="${masukH}" rx="2" fill="#1144F9" opacity="0.85">
+    html += `<rect x="${x1}" y="${pad.top + chartH - masukH}" width="${barW}" height="${masukH}" rx="2" fill="#2563EB" opacity="0.85">
       <title>Masuk: ${m.masuk}</title></rect>`;
     html += `<rect x="${x2}" y="${pad.top + chartH - keluarH}" width="${barW}" height="${keluarH}" rx="2" fill="#22c55e" opacity="0.85">
       <title>Keluar: ${m.keluar}</title></rect>`;
@@ -308,7 +308,7 @@ function createBarChartCustom(containerId, movement, width) {
   html += `<line x1="${pad.left}" y1="${pad.top}" x2="${pad.left}" y2="${pad.top + chartH}" stroke="#e5e7eb" stroke-width="1"/>
     <line x1="${pad.left}" y1="${pad.top + chartH}" x2="${pad.left + chartW}" y2="${pad.top + chartH}" stroke="#e5e7eb" stroke-width="1"/>` +
     // Legend (top-right, compact boxes with text)
-    `<rect x="${pad.left + chartW - 118}" y="4" width="12" height="12" rx="2" fill="#1144F9" opacity="0.85"/>
+    `<rect x="${pad.left + chartW - 118}" y="4" width="12" height="12" rx="2" fill="#2563EB" opacity="0.85"/>
     <text x="${pad.left + chartW - 102}" y="14" font-size="10" fill="#666">Masuk</text>
     <rect x="${pad.left + chartW - 52}" y="4" width="12" height="12" rx="2" fill="#22c55e" opacity="0.85"/>
     <text x="${pad.left + chartW - 36}" y="14" font-size="10" fill="#666">Keluar</text>`;
@@ -410,7 +410,7 @@ export function renderGudang() {
     { label: 'Lokasi', key: 'location', render: r => r.location },
     { label: 'Status', key: 'status', render: r => statusBadge(r.status || 'Aktif') },
     { label: 'Jml Produk', key: 'count', sortable: true, render: r => '<span style="font-weight:600">' + r.count + '</span>' },
-    { label: 'Total Stok', key: 'totalStock', sortable: true, render: r => '<span style="font-weight:600;color:#1144F9">' + (r.totalStock || 0) + '</span>' },
+    { label: 'Total Stok', key: 'totalStock', sortable: true, render: r => '<span style="font-weight:600;color:#2563EB">' + (r.totalStock || 0) + '</span>' },
     { label: 'Aksi', key: null, render: r => '<div class="table-actions">' +
       '<button class="btn-icon-sm" data-action="edit-gudang" data-id="' + r.id + '" title="Edit">' + icon('edit', 16) + '</button>' +
       '<button class="btn-icon-sm btn-icon-sm-danger" data-action="delete-gudang" data-id="' + r.id + '" title="Hapus">' + icon('trash', 16) + '</button>' +
@@ -787,7 +787,7 @@ export function renderUsers() {
   }
   const cols = [
     { label: 'Nama', key: 'name', sortable: true, render: r => `<div style="display:flex;align-items:center;gap:8px">
-      <div style="width:28px;height:28px;border-radius:6px;background:#1144F9;color:white;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;flex-shrink:0">${r.name.charAt(0)}</div>
+      <div style="width:28px;height:28px;border-radius:6px;background:#2563EB;color:white;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;flex-shrink:0">${r.name.charAt(0)}</div>
       <div><strong>${r.name}</strong></div>
     </div>` },
     { label: 'Email', key: 'email', render: r => r.email },

@@ -3,7 +3,7 @@
 // ============================================
 import { icon } from './icons.js';
 import { products, categories, suppliers, warehouses, barangMasuk, barangKeluar, stockAdjustments, stockTransfers, users, getCategory, getSupplier, getWarehouse, getProduct, getBarangMasuk, getBarangKeluar, updateCounts } from './data.js';
-import { ROUTE_LABELS, NAV_GROUPS } from './config.js';
+import { APP_NAME, ROUTE_LABELS, NAV_GROUPS } from './config.js';
 import { renderDashboard, renderProduk, renderKategori, renderSupplier, renderGudang, renderBarangMasuk, renderBarangKeluar, renderStockAdjustment, renderStockTransfer, renderStockOpname, renderReportStok, renderReportMasuk, renderReportKeluar, renderReportMutasi, renderUsers, renderRoles, showModal, closeModal, showToast } from './pages.js';
 import { handleAddMaster, handleAddBarangMasuk, handleAddBarangKeluar, handleAddStockAdjustment, handleAddStockTransfer, handleAddUser, handleAddKategori, handleAddSupplier, handleAddGudang, handleEdit, handleDelete, handleDetail } from './handlers.js';
 
@@ -17,7 +17,7 @@ function buildLayout() {
     // Dashboard & Stock Opname — direct nav items (no accordion)
     if (group.id === 'dashboard' || group.id === 'stock-opname') {
       var route = group.id === 'dashboard' ? '#/dashboard' : '#/stock-opname';
-      return '<a class="nav-item" href="' + route + '" data-route="' + route + '" style="display:flex;align-items:center;gap:10px;padding:8px 10px;margin:1px 0;border-radius:6px;font-size:13px;font-weight:400;color:#8a8b91;white-space:nowrap">' + icon(group.icon) + '<span>' + group.label + '</span></a>';
+      return '<a class="nav-item" href="' + route + '" data-route="' + route + '" style="display:flex;align-items:center;gap:10px;padding:8px 10px;margin:1px 0;border-radius:6px;font-size:13px;white-space:nowrap">' + icon(group.icon) + '<span>' + group.label + '</span></a>';
     }
     return '<div class="nav-group' + (group.id === 'master-data' ? ' expanded' : '') + '">' +
       '<div class="nav-group-header" data-group="' + group.id + '">' +
@@ -35,14 +35,15 @@ function buildLayout() {
     '<aside class="sidebar" id="sidebar">' +
       '<div class="sidebar-header">' +
         '<div class="sidebar-logo">' +
-          '<svg class="sidebar-logo-icon" viewBox="0 0 32 32" fill="none"><rect x="2" y="2" width="28" height="28" rx="8" fill="#1144F9"/><path d="M10 16h12M16 10v12" stroke="white" stroke-width="2.5" stroke-linecap="round"/><path d="M8 22V10a2 2 0 012-2h12a2 2 0 012 2v12a2 2 0 01-2 2H10a2 2 0 01-2-2z" stroke="white" stroke-width="1.5" fill="rgba(255,255,255,0.1)"/></svg>' +
-          '<span class="sidebar-logo-text">Inventaris</span>' +
+          '<svg class="sidebar-logo-icon" viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M16 2 29 9.5 16 17 3 9.5 16 2Z" fill="#60A5FA"/><path d="M3 9.5 16 17v13L3 22.5v-13Z" fill="#2563EB"/><path d="M29 9.5 16 17v13l13-7.5v-13Z" fill="#1E40AF"/><path d="m16 2 13 7.5v13L16 30 3 22.5v-13L16 2Z M3 9.5 16 17l13-7.5M16 17v13" stroke="#FFFFFF" stroke-width="2" stroke-linejoin="round"/></svg>' +
+          '<span class="sidebar-logo-text">' + APP_NAME + '</span>' +
         '</div>' +
         '<button class="sidebar-close-btn" id="sidebarClose" aria-label="Close sidebar"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>' +
       '</div>' +
       '<nav class="sidebar-nav" id="sidebarNav">' + sidebarGroups + '</nav>' +
       '<div class="sidebar-footer">' +
         '<div class="sidebar-user"><div class="sidebar-user-avatar">A</div><div class="sidebar-user-info"><div class="sidebar-user-name">Admin User</div><div class="sidebar-user-role">Owner</div></div></div>' +
+        '<div class="sidebar-footer-brand">Powered by  Overkreatif</div>' +
       '</div>' +
     '</aside>' +
     '<div class="sidebar-overlay" id="sidebarOverlay"></div>' +
@@ -111,6 +112,7 @@ function renderPage(route) {
   if (!pageContent) return;
 
   var cleanRoute = route.split('?')[0];
+  document.title = (ROUTE_LABELS[cleanRoute]?.label || 'Dashboard') + ' | ' + APP_NAME;
 
   // Update active nav
   document.querySelectorAll('.nav-item').forEach(function(el) {
