@@ -1473,6 +1473,9 @@ tbody tr:last-child td {
   .summary-cards {
     grid-template-columns: 1fr;
   }
+  .summary-cards.summary-cards-stockopname {
+      grid-template-columns: repeat(2, 1fr)!important;
+  }
   .form-grid {
     grid-template-columns: 1fr;
   }

@@ -607,7 +607,7 @@ export function renderStockOpname() {
   ];
 
   return pageHeader('Stock Opname', 'Pencocokan stok fisik dengan sistem') +
-    `<div class="summary-cards summary-cards-four">
+    `<div class="summary-cards summary-cards-four summary-cards-stockopname">
       <div class="summary-card">
         <div class="summary-card-label">Total Item</div>
         <div class="summary-card-value">${totalItems}</div>
