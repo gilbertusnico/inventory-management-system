@@ -157,23 +157,57 @@ function formatShort(val) {
 }
 
 // Monthly inventory movement data for dashboard
-export function getMonthlyMovement() {
-  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
-  var masuk = months.map(function() { return 0; });
-  var keluar = months.map(function() { return 0; });
-  if (typeof barangMasuk !== 'undefined') {
-    barangMasuk.forEach(function(t) {
-      var m = new Date(t.date + 'T00:00:00').getMonth();
-      t.items.forEach(function(it) { masuk[m] += it.qty; });
+export function getMonthlyMovement(fromDate, toDate) {
+  const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+  const fromMatch = /^(\d{4})-(\d{2})-\d{2}$/.exec(fromDate || '');
+  const toMatch = /^(\d{4})-(\d{2})-\d{2}$/.exec(toDate || '');
+  const isValidDate = function(value) {
+    const date = new Date(value + 'T00:00:00.000Z');
+    return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value;
+  };
+  if (!fromMatch || !toMatch || !isValidDate(fromDate) || !isValidDate(toDate) || fromDate > toDate) return [];
+
+  const start = new Date(Number(fromMatch[1]), Number(fromMatch[2]) - 1, 1);
+  const end = new Date(Number(toMatch[1]), Number(toMatch[2]) - 1, 1);
+  const months = [];
+  for (let date = start; date <= end; date = new Date(date.getFullYear(), date.getMonth() + 1, 1)) {
+    months.push({
+      year: date.getFullYear(),
+      month: date.getMonth(),
+      label: monthNames[date.getMonth()],
+      masuk: 0,
+      keluar: 0,
     });
   }
-  if (typeof barangKeluar !== 'undefined') {
-    barangKeluar.forEach(function(t) {
-      var m = new Date(t.date + 'T00:00:00').getMonth();
-      t.items.forEach(function(it) { keluar[m] += it.qty; });
+
+  function addTransactions(transactions, key) {
+    transactions.forEach(function(transaction) {
+      const match = /^(\d{4})-(\d{2})-\d{2}/.exec(transaction.date || '');
+      if (!match) return;
+      if (transaction.date < fromDate || transaction.date > toDate) return;
+      const year = Number(match[1]);
+      const month = Number(match[2]) - 1;
+      const bucket = months.find(function(item) {
+        return item.year === year && item.month === month;
+      });
+      if (bucket) {
+        (transaction.items || []).forEach(function(item) {
+          bucket[key] += Number(item.qty) || 0;
+        });
+      }
     });
   }
-  return months.map(function(m, i) { return { label: m, masuk: masuk[i], keluar: keluar[i] }; });
+  addTransactions(barangMasuk, 'masuk');
+  addTransactions(barangKeluar, 'keluar');
+
+  const crossesYear = months[0].year !== months[months.length - 1].year;
+  return months.map(function(item) {
+    return {
+      label: crossesYear ? item.label + " '" + String(item.year).slice(-2) : item.label,
+      masuk: item.masuk,
+      keluar: item.keluar,
+    };
+  });
 }
 
 export function getStockDistribution() {

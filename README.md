@@ -34,6 +34,7 @@ Build and run with `npm run build` and `npm start`, with `DATABASE_URL`, `VITE_C
 
 ## Transaction tests
 
-Run `npm run test:transactions` to verify stock movements for incoming stock, outgoing stock, stock adjustments, inter-warehouse transfers, and stock-opname physical counts. Run `npm run test:master-reports` to verify master-data CRUD and report totals/date filters. The stock-opname page currently reports physical counts; applying a count to system stock is done through a stock adjustment.
+Run `npm run test:transactions` to verify stock movements for incoming stock, outgoing stock, stock adjustments, inter-warehouse transfers, and stock-opname physical counts. Run `npm run test:master-reports` to verify master-data CRUD and report totals/date filters. Stock opname records physical-count history but does not change system stock; use a stock adjustment to apply the variance.
 
 Run `npm run test:vercel-api` to test authentication, API routing, and payload validation.
+Run `npm run test:dashboard` to verify custom dashboard movement date ranges, low-stock warehouse alerts, quick actions, and recent transaction/opname activity.

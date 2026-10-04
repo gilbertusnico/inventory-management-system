@@ -2,7 +2,7 @@
 // INVENTARIS — CRUD Handlers (multi-warehouse)
 // ============================================
 import { icon } from './icons.js';
-import { products, categories, suppliers, warehouses, barangMasuk, barangKeluar, stockAdjustments, stockTransfers, users, productStocks, getProduct, getBarangMasuk, getBarangKeluar, getWarehouse, getSupplier, getProductStock, getTotalStock, addStock, setStock, saveAllData, getNextRef, formatDate } from './data.js';
+import { products, categories, suppliers, warehouses, barangMasuk, barangKeluar, stockAdjustments, stockTransfers, users, productStocks, getProduct, getBarangMasuk, getBarangKeluar, getWarehouse, getSupplier, getProductStock, getTotalStock, addStock, setStock, setStockOpnameFisik, saveAllData, getNextRef, formatDate, getLocalDateString } from './data.js';
 import { showModal, closeModal, showToast } from './pages.js';
 
 window.closeModal = closeModal;
@@ -16,6 +16,51 @@ function nextId(arr) {
 }
 function getCurrentRoute() { return (window.location.hash || '#/dashboard').split('?')[0]; }
 function reRender() { if (typeof renderPage === 'function') renderPage(getCurrentRoute()); else window.location.reload(); }
+
+export function handleRecordStockOpname(productId, warehouseId) {
+  var product = getProduct(productId);
+  var warehouse = getWarehouse(warehouseId);
+  var stock = getProductStock(productId, warehouseId);
+  if (!product || !warehouse || !stock) {
+    showToast('Produk atau stok gudang tidak ditemukan', 'error');
+    return;
+  }
+
+  showModal(
+    'Catat Hasil Stock Opname',
+    '<div class="form-group"><label class="form-label">Produk</label><input class="form-input" id="opnameProductName" disabled></div>' +
+      '<div class="form-group"><label class="form-label">Gudang</label><input class="form-input" id="opnameWarehouseName" disabled></div>' +
+      '<div class="form-group"><label class="form-label">Stok Sistem</label><input class="form-input" id="opnameSystemStock" type="number" value="' + stock.stock + '" disabled></div>' +
+      '<div class="form-group"><label class="form-label">Stok Fisik</label><input class="form-input" id="opnamePhysicalStock" type="number" min="0" step="1" required></div>',
+    '<button class="btn btn-secondary" id="cancelOpname">Batal</button><button class="btn btn-primary" id="saveOpname">Simpan Hasil</button>',
+  );
+  document.getElementById('opnameProductName').value = product.name;
+  document.getElementById('opnameWarehouseName').value = warehouse.name;
+  document.getElementById('cancelOpname')?.addEventListener('click', closeModal);
+  document.getElementById('saveOpname')?.addEventListener('click', async function() {
+    var input = document.getElementById('opnamePhysicalStock');
+    var rawValue = input?.value.trim() || '';
+    var physicalStock = Number(rawValue);
+    if (!rawValue || !Number.isInteger(physicalStock) || physicalStock < 0) {
+      markError('opnamePhysicalStock', 'Stok fisik harus berupa bilangan bulat minimal 0');
+      focusFirstError();
+      return;
+    }
+
+    var saveButton = document.getElementById('saveOpname');
+    if (saveButton) saveButton.disabled = true;
+    try {
+      await setStockOpnameFisik(productId, warehouseId, physicalStock);
+      reRender();
+      closeModal();
+      setTimeout(function() { showToast('Hasil stock opname berhasil disimpan', 'success'); }, 80);
+    } catch (error) {
+      if (saveButton) saveButton.disabled = false;
+      console.error('Gagal menyimpan hasil stock opname:', error);
+      showToast('Hasil stock opname gagal disimpan ke database. Muat ulang halaman sebelum mencoba lagi.', 'error');
+    }
+  });
+}
 
 // Save + reRender BEFORE closing modal to avoid white flash
 var saveInProgress = false;
@@ -64,6 +109,17 @@ function focusFirstError() {
 }
 function validateRequired(id, label) {
   if (!formValue(id)) { markError(id, label + ' wajib diisi'); return false; }
+  return true;
+}
+function validateDate(id, label) {
+  var value = formValue(id);
+  if (!value) { markError(id, label + ' wajib diisi'); return false; }
+  var match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  var date = new Date(value + 'T00:00:00.000Z');
+  if (!match || Number.isNaN(date.getTime()) || date.toISOString().slice(0, 10) !== value) {
+    markError(id, label + ' tidak valid');
+    return false;
+  }
   return true;
 }
 function validateNumber(id, label, opts) {
@@ -300,11 +356,11 @@ export function handleAddBarangMasuk() {
     var total = getTotalStock(p.id);
     return '<option value="' + p.id + '">' + p.name + ' (total stok: ' + total + ')</option>';
   }).join('');
-  var today = new Date().toISOString().split('T')[0];
+  var today = getLocalDateString();
 
   showModal('Barang Masuk Baru',
     '<div class="form-grid">' +
-      '<div class="form-group"><label class="form-label">Tanggal <span class="required">*</span></label><input class="form-input" id="bm_date" type="date" value="' + today + '"></div>' +
+      '<div class="form-group"><label class="form-label">Tanggal <span class="required">*</span></label><input class="form-input" id="bm_date" type="date" value="' + today + '" required></div>' +
       '<div class="form-group"><label class="form-label">Supplier <span class="required">*</span></label><select class="form-select" id="bm_supplier">' + supOpts + '</select></div>' +
       '<div class="form-group"><label class="form-label">Gudang Tujuan <span class="required">*</span></label><select class="form-select" id="bm_warehouse">' + whOpts + '</select></div>' +
       '<div class="form-group"><label class="form-label">No. Referensi</label><input class="form-input" id="bm_ref" placeholder="PO-2024-XXX"></div>' +
@@ -352,6 +408,7 @@ export function handleAddBarangMasuk() {
         clearFormErrors();
         var items = window._bmItems || [];
         if (items.length === 0) { showToast('Tambahkan minimal 1 item produk terlebih dahulu', 'error'); return; }
+        if (!validateDate('bm_date', 'Tanggal')) { focusFirstError(); return; }
         if (!hasSelectValue('bm_supplier', 'Supplier')) return;
         if (!hasSelectValue('bm_warehouse', 'Gudang tujuan')) return;
         var whId = parseInt(document.getElementById('bm_warehouse')?.value) || 1;
@@ -360,7 +417,7 @@ export function handleAddBarangMasuk() {
         }
         barangMasuk.push({
           id: nextId(barangMasuk),
-          date: document.getElementById('bm_date')?.value || today,
+          date: formValue('bm_date'),
           supplierId: parseInt(document.getElementById('bm_supplier')?.value) || 1,
           warehouseId: whId,
           ref: document.getElementById('bm_ref')?.value || getNextRef('bm'),
@@ -381,11 +438,11 @@ export function handleAddBarangKeluar() {
   if (warehouses.length === 0) { showToast('Belum ada gudang — tambahkan gudang terlebih dahulu', 'error'); return; }
   if (productStocks.length === 0) { showToast('Belum ada stok produk di gudang mana pun', 'error'); return; }
   var whOpts = warehouses.map(function(w) { return '<option value="' + w.id + '">' + w.name + '</option>'; }).join('');
-  var today = new Date().toISOString().split('T')[0];
+  var today = getLocalDateString();
 
   showModal('Barang Keluar Baru',
     '<div class="form-grid">' +
-      '<div class="form-group"><label class="form-label">Tanggal <span class="required">*</span></label><input class="form-input" id="bk_date" type="date" value="' + today + '"></div>' +
+      '<div class="form-group"><label class="form-label">Tanggal <span class="required">*</span></label><input class="form-input" id="bk_date" type="date" value="' + today + '" required></div>' +
       '<div class="form-group"><label class="form-label">Penerima/PIC <span class="required">*</span></label><input class="form-input" id="bk_penerima" placeholder="Nama penerima"></div>' +
       '<div class="form-group"><label class="form-label">Gudang Asal <span class="required">*</span></label><select class="form-select" id="bk_warehouse">' + whOpts + '</select></div>' +
       '<div class="form-group"><label class="form-label">No. Referensi</label><input class="form-input" id="bk_ref" placeholder="OUT-XXX"></div>' +
@@ -444,6 +501,7 @@ export function handleAddBarangKeluar() {
         clearFormErrors();
         var items = window._bkItems || [];
         if (items.length === 0) { showToast('Tambahkan minimal 1 item produk terlebih dahulu', 'error'); return; }
+        if (!validateDate('bk_date', 'Tanggal')) { focusFirstError(); return; }
         if (!validateRequired('bk_penerima', 'Penerima/PIC')) { focusFirstError(); return; }
         if (!hasSelectValue('bk_warehouse', 'Gudang asal')) return;
         var whId = parseInt(document.getElementById('bk_warehouse')?.value) || 1;
@@ -452,7 +510,7 @@ export function handleAddBarangKeluar() {
         }
         barangKeluar.push({
           id: nextId(barangKeluar),
-          date: document.getElementById('bk_date')?.value || today,
+          date: formValue('bk_date'),
           penerima: formValue('bk_penerima'),
           warehouseId: whId,
           items: items.slice(),
@@ -473,11 +531,11 @@ export function handleAddStockAdjustment() {
   if (warehouses.length === 0) { showToast('Belum ada gudang — tambahkan gudang terlebih dahulu', 'error'); return; }
   if (productStocks.length === 0) { showToast('Belum ada stok produk di gudang mana pun — tambahkan barang masuk terlebih dahulu', 'error'); return; }
   var whOpts = warehouses.map(function(w) { return '<option value="' + w.id + '">' + w.name + '</option>'; }).join('');
-  var today = new Date().toISOString().split('T')[0];
+  var today = getLocalDateString();
 
   showModal('Stock Adjustment Baru',
     '<div class="form-grid">' +
-      '<div class="form-group"><label class="form-label">Tanggal <span class="required">*</span></label><input class="form-input" id="sa_date" type="date" value="' + today + '"></div>' +
+      '<div class="form-group"><label class="form-label">Tanggal <span class="required">*</span></label><input class="form-input" id="sa_date" type="date" value="' + today + '" required></div>' +
       '<div class="form-group"><label class="form-label">Gudang <span class="required">*</span></label><select class="form-select" id="sa_warehouse">' + whOpts + '</select></div>' +
       '<div class="form-group"><label class="form-label">Produk <span class="required">*</span></label><select class="form-select" id="sa_product"></select></div>' +
       '<div class="form-group"><label class="form-label">Stok Sistem</label><input class="form-input" id="sa_sistem" type="number" readonly></div>' +
@@ -527,6 +585,7 @@ export function handleAddStockAdjustment() {
     if (saveBtn) {
       saveBtn.addEventListener('click', function() {
         clearFormErrors();
+        if (!validateDate('sa_date', 'Tanggal')) { focusFirstError(); return; }
         var whVal = document.getElementById('sa_warehouse')?.value;
         var prodVal = document.getElementById('sa_product')?.value;
         var fisikEl = document.getElementById('sa_fisik');
@@ -545,7 +604,7 @@ export function handleAddStockAdjustment() {
         var sistem = parseInt(document.getElementById('sa_sistem')?.value) || 0;
         stockAdjustments.push({
           id: nextId(stockAdjustments),
-          date: document.getElementById('sa_date')?.value || today,
+          date: formValue('sa_date'),
           productId: productId,
           warehouseId: whId,
           sistem: sistem,

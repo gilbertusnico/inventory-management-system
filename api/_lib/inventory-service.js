@@ -198,6 +198,15 @@ function defineRelationalSchema(sql) {
       fisik integer NOT NULL CHECK (fisik >= 0),
       PRIMARY KEY (product_id, warehouse_id)
     )`,
+    sql`CREATE TABLE IF NOT EXISTS stock_opname_activities (
+      id integer PRIMARY KEY,
+      date text NOT NULL,
+      product_id integer NOT NULL REFERENCES products(id),
+      warehouse_id integer NOT NULL REFERENCES warehouses(id),
+      sistem integer NOT NULL CHECK (sistem >= 0),
+      fisik integer NOT NULL CHECK (fisik >= 0)
+    )`,
+    sql`CREATE INDEX IF NOT EXISTS stock_opname_activities_date_idx ON stock_opname_activities(date)`,
     sql`CREATE INDEX IF NOT EXISTS products_category_id_idx ON products(category_id)`,
     sql`CREATE INDEX IF NOT EXISTS products_supplier_id_idx ON products(supplier_id)`,
     sql`CREATE INDEX IF NOT EXISTS product_stocks_warehouse_id_idx ON product_stocks(warehouse_id)`,
@@ -257,7 +266,7 @@ function itemRows(sql, table, transactions) {
 
 async function replaceRelationalData(sql, data) {
   const queries = [
-    'stock_opname_fisik', 'barang_masuk_items', 'barang_keluar_items', 'stock_transfer_items',
+    'stock_opname_fisik', 'stock_opname_activities', 'barang_masuk_items', 'barang_keluar_items', 'stock_transfer_items',
     'stock_adjustments', 'stock_transfers', 'barang_keluar', 'barang_masuk',
     'product_stocks', 'products', 'users', 'warehouses', 'suppliers', 'categories',
   ].map(function(table) { return sql.query('DELETE FROM ' + table); });
@@ -295,6 +304,14 @@ async function replaceRelationalData(sql, data) {
     ['warehouse_id', 'integer', 'warehouse_id'],
     ['fisik', 'integer', 'fisik'],
   ], opnameRows));
+  queries.push(...datasetRows(sql, 'stock_opname_activities', [
+    ['id', 'integer', 'id'],
+    ['date', 'text', 'date'],
+    ['product_id', 'integer', 'productId'],
+    ['warehouse_id', 'integer', 'warehouseId'],
+    ['sistem', 'integer', 'sistem'],
+    ['fisik', 'integer', 'fisik'],
+  ], data.stockOpnameActivities || []));
   await sql.transaction(queries);
 }
 
@@ -342,7 +359,7 @@ async function readRelationalData(sql) {
   const [
     categories, suppliers, warehouses, products, stocks,
     inbound, inboundItems, outbound, outboundItems,
-    adjustments, transfers, transferItems, users, opname,
+    adjustments, transfers, transferItems, users, opname, opnameActivities,
   ] = await Promise.all([
     sql`SELECT id, name, description, created_at AS "createdAt" FROM categories ORDER BY id`,
     sql`SELECT id, name, pic, email, phone, created_at AS "createdAt" FROM suppliers ORDER BY id`,
@@ -358,6 +375,7 @@ async function readRelationalData(sql) {
     sql`SELECT transaction_id, line_number, product_id AS "productId", qty FROM stock_transfer_items ORDER BY transaction_id, line_number`,
     sql`SELECT id, name, email, role, status, last_login AS "lastLogin", created_at AS "createdAt" FROM users ORDER BY id`,
     sql`SELECT product_id, warehouse_id, fisik FROM stock_opname_fisik`,
+    sql`SELECT id, date, product_id AS "productId", warehouse_id AS "warehouseId", sistem, fisik FROM stock_opname_activities ORDER BY id`,
   ]);
 
   function attachItems(headers, rows) {
@@ -381,7 +399,7 @@ async function readRelationalData(sql) {
     barangKeluar: attachItems(outbound, outboundItems),
     stockAdjustments: adjustments,
     stockTransfers: attachItems(transfers, transferItems),
-    users, stockOpnameFisik,
+    users, stockOpnameFisik, stockOpnameActivities: opnameActivities,
   };
 }
 
@@ -391,7 +409,8 @@ function validateData(data) {
       'barangKeluar', 'stockAdjustments', 'stockTransfers', 'users']
       .every(function(key) { return Array.isArray(data[key]); }) &&
     data.stockOpnameFisik && typeof data.stockOpnameFisik === 'object' &&
-    !Array.isArray(data.stockOpnameFisik);
+    !Array.isArray(data.stockOpnameFisik) &&
+    (data.stockOpnameActivities === undefined || Array.isArray(data.stockOpnameActivities));
 }
 
 function authorizedParties() {

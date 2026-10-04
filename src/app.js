@@ -5,7 +5,7 @@ import { icon } from './icons.js';
 import { products, categories, suppliers, warehouses, barangMasuk, barangKeluar, stockAdjustments, stockTransfers, users, getCategory, getSupplier, getWarehouse, getProduct, getBarangMasuk, getBarangKeluar, updateCounts } from './data.js';
 import { APP_NAME, ROUTE_LABELS, NAV_GROUPS } from './config.js';
 import { renderDashboard, renderProduk, renderKategori, renderSupplier, renderGudang, renderBarangMasuk, renderBarangKeluar, renderStockAdjustment, renderStockTransfer, renderStockOpname, renderReportStok, renderReportMasuk, renderReportKeluar, renderReportMutasi, renderUsers, renderRoles, showModal, closeModal, showToast } from './pages.js';
-import { handleAddMaster, handleAddBarangMasuk, handleAddBarangKeluar, handleAddStockAdjustment, handleAddStockTransfer, handleAddUser, handleAddKategori, handleAddSupplier, handleAddGudang, handleEdit, handleDelete, handleDetail } from './handlers.js';
+import { handleAddMaster, handleAddBarangMasuk, handleAddBarangKeluar, handleAddStockAdjustment, handleAddStockTransfer, handleAddUser, handleAddKategori, handleAddSupplier, handleAddGudang, handleRecordStockOpname, handleEdit, handleDelete, handleDetail } from './handlers.js';
 
 // ======================
 // BUILD APP LAYOUT
@@ -235,6 +235,10 @@ function setupEvents() {
     else if (action === 'add-bk') handleAddBarangKeluar();
     else if (action === 'add-sa') handleAddStockAdjustment();
     else if (action === 'add-st') handleAddStockTransfer();
+    else if (action === 'record-opname') {
+      var opnameIds = id.split('-').map(Number);
+      handleRecordStockOpname(opnameIds[0], opnameIds[1]);
+    }
     else if (action === 'add-user') handleAddUser();
     else if (action === 'export-btn') showToast('Laporan sedang diproses', 'info');
     else if (action.startsWith('edit-')) handleEdit(action, id);
@@ -267,6 +271,22 @@ function setupEvents() {
 
   // Date range inputs — auto-apply on change
   app.addEventListener('change', function(e) {
+    var movementFrom = e.target.closest('#dashboardMovementFrom');
+    var movementTo = e.target.closest('#dashboardMovementTo');
+    if (movementFrom || movementTo) {
+      var from = document.getElementById('dashboardMovementFrom')?.value || '';
+      var to = document.getElementById('dashboardMovementTo')?.value || '';
+      if (from && to && from > to) {
+        showToast('Tanggal awal tidak boleh melewati tanggal akhir', 'error');
+        renderPage(getCurrentRoute());
+        return;
+      }
+      window._dashboardMovementFrom = from;
+      window._dashboardMovementTo = to;
+      window._currentPage = 1;
+      renderPage(getCurrentRoute());
+      return;
+    }
     var input = e.target.closest('#dateFrom, #dateTo');
     if (!input) return;
     window._dateFrom = document.getElementById('dateFrom')?.value || '';

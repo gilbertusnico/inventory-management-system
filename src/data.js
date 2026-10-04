@@ -131,6 +131,7 @@ export const stockTransfers = [
 
 // Stock Opname — di-generate dinamis dari productStocks
 var _stockOpnameFisik = {};
+export const stockOpnameActivities = [];
 
 export function getStockOpname() {
   var map = {};
@@ -159,6 +160,16 @@ export function setStockOpnameFisik(productId, warehouseId, fisik) {
   if (!Number.isInteger(fisik) || fisik < 0) {
     throw new RangeError('Stok fisik harus bilangan bulat minimal 0');
   }
+  var stock = getProductStock(productId, warehouseId);
+  if (!stock) throw new Error('Data stok produk dan gudang tidak ditemukan');
+  stockOpnameActivities.push({
+    id: nextId(stockOpnameActivities),
+    date: getLocalDateString(),
+    productId: productId,
+    warehouseId: warehouseId,
+    sistem: stock.stock,
+    fisik: fisik,
+  });
   _stockOpnameFisik[productId + '-' + warehouseId] = fisik;
   return saveAllData();
 }
@@ -298,6 +309,14 @@ export function formatCurrency(val) {
   return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(val);
 }
 
+export function getLocalDateString(date = new Date()) {
+  return [
+    date.getFullYear(),
+    String(date.getMonth() + 1).padStart(2, '0'),
+    String(date.getDate()).padStart(2, '0'),
+  ].join('-');
+}
+
 export function formatDate(dateStr) {
   if (!dateStr) return '-';
   var d = new Date(dateStr + 'T00:00:00');
@@ -382,6 +401,7 @@ function getDataSnapshot() {
     snapshot[ALL_DATASETS[i].key] = ALL_DATASETS[i].data;
   }
   snapshot.stockOpnameFisik = _stockOpnameFisik;
+  snapshot.stockOpnameActivities = stockOpnameActivities;
   return snapshot;
 }
 
@@ -398,6 +418,10 @@ function applyDataSnapshot(snapshot) {
     }
   }
   _stockOpnameFisik = snapshot.stockOpnameFisik || {};
+  stockOpnameActivities.length = 0;
+  if (Array.isArray(snapshot.stockOpnameActivities)) {
+    stockOpnameActivities.push(...snapshot.stockOpnameActivities);
+  }
 }
 
 function readLegacySnapshot() {

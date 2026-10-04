@@ -131,6 +131,15 @@ CREATE TABLE IF NOT EXISTS stock_opname_fisik (
   PRIMARY KEY (product_id, warehouse_id)
 );
 
+CREATE TABLE IF NOT EXISTS stock_opname_activities (
+  id integer PRIMARY KEY,
+  date text NOT NULL,
+  product_id integer NOT NULL REFERENCES products(id),
+  warehouse_id integer NOT NULL REFERENCES warehouses(id),
+  sistem integer NOT NULL CHECK (sistem >= 0),
+  fisik integer NOT NULL CHECK (fisik >= 0)
+);
+
 CREATE INDEX IF NOT EXISTS products_category_id_idx ON products(category_id);
 CREATE INDEX IF NOT EXISTS products_supplier_id_idx ON products(supplier_id);
 CREATE INDEX IF NOT EXISTS product_stocks_warehouse_id_idx ON product_stocks(warehouse_id);
@@ -138,3 +147,4 @@ CREATE INDEX IF NOT EXISTS barang_masuk_date_idx ON barang_masuk(date);
 CREATE INDEX IF NOT EXISTS barang_keluar_date_idx ON barang_keluar(date);
 CREATE INDEX IF NOT EXISTS stock_adjustments_date_idx ON stock_adjustments(date);
 CREATE INDEX IF NOT EXISTS stock_transfers_date_idx ON stock_transfers(date);
+CREATE INDEX IF NOT EXISTS stock_opname_activities_date_idx ON stock_opname_activities(date);

@@ -2,6 +2,8 @@ import assert from 'node:assert/strict';
 import { JSDOM } from 'jsdom';
 import { pathToFileURL } from 'node:url';
 
+process.env.TZ = 'Asia/Jakarta';
+
 const dom = new JSDOM('<!DOCTYPE html><html><body><div id="root"></div><div id="pageContent"></div><div id="toastContainer"></div><div id="breadcrumb"></div></body></html>', {
   url: 'http://localhost/',
   pretendToBeVisual: true,
@@ -28,6 +30,7 @@ const moduleUrl = pathToFileURL(process.cwd() + '/src/data.js');
 const data = await import(moduleUrl.href);
 const handlers = await import(pathToFileURL(process.cwd() + '/src/handlers.js').href);
 await data.initializeData();
+assert.equal(data.getLocalDateString(new Date('2026-10-04T20:00:00.000Z')), '2026-10-05', 'local date does not roll back to the previous UTC day');
 
 function replaceContents(target, rows) {
   target.splice(0, target.length, ...rows);
@@ -84,7 +87,9 @@ document.querySelector('.modal-overlay')?.remove();
 casePassed('Barang masuk without items is rejected without stock movement');
 
 await open(handlers.handleAddBarangMasuk);
+assert.equal(document.getElementById('bm_date').value, data.getLocalDateString(), 'barang masuk defaults to the local calendar date');
 document.getElementById('bm_warehouse').value = '2';
+document.getElementById('bm_date').value = '2026-02-03';
 document.getElementById('bm_product').value = '1';
 document.getElementById('bm_qty').value = '1.5';
 await click('addBmItem');
@@ -100,11 +105,14 @@ await save('saveBm');
 assert.equal(stock(1, 2), 9, 'barang masuk adds received quantity');
 assert.equal(stock(2, 2), 2, 'barang masuk creates stock for another product');
 assert.equal(stock(1, 1), 10, 'barang masuk does not affect another warehouse');
+assert.equal(data.barangMasuk.at(-1).date, '2026-02-03', 'barang masuk preserves the selected calendar date');
 assert.deepEqual(data.barangMasuk.at(-1).items, [{ productId: 1, qty: 5 }, { productId: 2, qty: 2 }]);
 casePassed('Barang masuk adds each line to selected warehouse and rejects fractional qty');
 
 await open(handlers.handleAddBarangKeluar);
+assert.equal(document.getElementById('bk_date').value, data.getLocalDateString(), 'barang keluar defaults to the local calendar date');
 document.getElementById('bk_warehouse').value = '2';
+document.getElementById('bk_date').value = '2026-02-04';
 document.getElementById('bk_warehouse').dispatchEvent(new dom.window.Event('change'));
 await sleep(5);
 document.getElementById('bk_product').value = '1';
@@ -123,11 +131,14 @@ assert.equal(stock(1, 2), 9, 'barang keluar does not change stock before save');
 await save('saveBk');
 assert.equal(stock(1, 2), 0, 'barang keluar can consume exact available stock');
 assert.equal(stock(1, 1), 10, 'barang keluar only affects selected warehouse');
+assert.equal(data.barangKeluar.at(-1).date, '2026-02-04', 'barang keluar preserves the selected calendar date');
 assert.deepEqual(data.barangKeluar.at(-1).items, [{ productId: 1, qty: 9 }]);
 casePassed('Barang keluar rejects fractional/over-stock qty and permits exact depletion');
 
 await open(handlers.handleAddStockAdjustment);
+assert.equal(document.getElementById('sa_date').value, data.getLocalDateString(), 'stock adjustment defaults to the local calendar date');
 document.getElementById('sa_warehouse').value = '1';
+document.getElementById('sa_date').value = '2026-02-05';
 document.getElementById('sa_warehouse').dispatchEvent(new dom.window.Event('change'));
 await sleep(5);
 document.getElementById('sa_product').value = '1';
@@ -141,6 +152,7 @@ document.querySelector('.modal-overlay')?.remove();
 
 await open(handlers.handleAddStockAdjustment);
 document.getElementById('sa_warehouse').value = '1';
+document.getElementById('sa_date').value = '2026-02-05';
 document.getElementById('sa_warehouse').dispatchEvent(new dom.window.Event('change'));
 await sleep(5);
 document.getElementById('sa_product').value = '1';
@@ -152,6 +164,7 @@ assert.equal(stock(1, 1), 10, 'adjustment only changes stock on save');
 await save('saveSa');
 assert.equal(stock(1, 1), 0, 'downward adjustment sets stock to physical count');
 assert.equal(data.stockAdjustments.at(-1).selisih, -10);
+assert.equal(data.stockAdjustments.at(-1).date, '2026-02-05', 'stock adjustment preserves the selected calendar date');
 casePassed('Stock adjustment rejects negative count and sets lower physical count on save');
 
 await open(handlers.handleAddStockAdjustment);

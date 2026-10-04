@@ -2,9 +2,10 @@
 // INVENTARIS — Page Renderers
 // ============================================
 import { icon } from './icons.js';
-import { products, categories, suppliers, warehouses, barangMasuk, barangKeluar, stockAdjustments, stockTransfers, users, permissions, productStocks, getProductStockRows, getCategory, getSupplier, getWarehouse, getProduct, getUser, getBarangMasuk, getBarangKeluar, getLowStockProducts, getProductsByWarehouse, getTotalStock, getAllProductStocks, getStockOpname, formatCurrency, formatDate, formatDateTime } from './data.js';
+import { products, categories, suppliers, warehouses, barangMasuk, barangKeluar, stockAdjustments, stockTransfers, stockOpnameActivities, users, permissions, productStocks, getProductStockRows, getCategory, getSupplier, getWarehouse, getProduct, getUser, getBarangMasuk, getBarangKeluar, getLowStockProducts, getProductsByWarehouse, getTotalStock, getAllProductStocks, getStockOpname, formatCurrency, formatDate, formatDateTime } from './data.js';
 import { createBarChart, createDonutChart, createLineChart, getMonthlyMovement, getStockDistribution } from './charts.js';
 import { getDateRange, inRange, filterByDate, getLatest, buildMonthlySeries, buildMutasiSeries, reportFilterBar } from './report-utils.js';
+import { ROUTES } from './config.js';
 function getPage() { return window._currentPage || 1; }
 function getSort() { return window._currentSort || { key: null, asc: true }; }
 function getSearch() { return window._searchTerm || ''; }
@@ -132,7 +133,21 @@ function renderTable(data, columns, page = 1, perPage = 10) {
 // --- DASHBOARD ---
 export function renderDashboard() {
   const lowStock = getLowStockProducts();
-  const movement = getMonthlyMovement();
+  const today = new Date();
+  const defaultEnd = [
+    today.getFullYear(),
+    String(today.getMonth() + 1).padStart(2, '0'),
+    String(today.getDate()).padStart(2, '0'),
+  ].join('-');
+  const defaultStartDate = new Date(today.getFullYear(), today.getMonth() - 11, 1);
+  const defaultStart = [
+    defaultStartDate.getFullYear(),
+    String(defaultStartDate.getMonth() + 1).padStart(2, '0'),
+    String(defaultStartDate.getDate()).padStart(2, '0'),
+  ].join('-');
+  const movementFrom = window._dashboardMovementFrom || defaultStart;
+  const movementTo = window._dashboardMovementTo || defaultEnd;
+  const movement = getMonthlyMovement(movementFrom, movementTo);
   const dist = getStockDistribution();
   const totalStock = productStocks.reduce(function(s, ps) { return s + ps.stock; }, 0);
 
@@ -158,6 +173,12 @@ export function renderDashboard() {
 
   const content = `
     ${pageHeader('Dashboard', 'Ringkasan inventaris dan aktivitas terkini')}
+    <div class="dashboard-quick-actions" aria-label="Aksi cepat">
+      <button class="btn btn-primary" data-action="add-bm">${icon('plus', 16)} Barang Masuk</button>
+      <button class="btn btn-secondary" data-action="add-bk">${icon('plus', 16)} Barang Keluar</button>
+      <button class="btn btn-secondary" data-action="add-st">${icon('refresh', 16)} Transfer</button>
+      <a class="btn btn-secondary" href="${ROUTES.STOCK_OPNAME}">${icon('clipboard', 16)} Stock Opname</a>
+    </div>
     <div class="kpi-grid">
       <div class="kpi-card">
         <div class="kpi-card-icon blue">${icon('box')}</div>
@@ -197,7 +218,15 @@ export function renderDashboard() {
         <div class="card-header">
           <div>
             <div class="card-title">Pergerakan Inventaris</div>
-            <div class="card-subtitle">Barang Masuk & Keluar per Bulan</div>
+            <div class="card-subtitle">Barang masuk & keluar per bulan</div>
+          </div>
+          <div class="dashboard-period-range">
+            <label class="dashboard-period-label" for="dashboardMovementFrom">Dari
+              <input class="form-input dashboard-period-input" id="dashboardMovementFrom" type="date" value="${movementFrom}" max="${movementTo}">
+            </label>
+            <label class="dashboard-period-label" for="dashboardMovementTo">Sampai
+              <input class="form-input dashboard-period-input" id="dashboardMovementTo" type="date" value="${movementTo}" min="${movementFrom}" max="${defaultEnd}">
+            </label>
           </div>
         </div>
         <div class="chart-container" id="chartMovement">
@@ -213,10 +242,13 @@ export function renderDashboard() {
         </div>
         <div class="alert-list">
           ${lowStock.length > 0 ? lowStock.slice(0, 6).map(p => `
-            <div class="alert-item">
-              <span class="alert-item-name">${p.name}</span>
-              <div><span class="alert-item-stock">${p.stock}</span> <span style="font-size:11px;color:#999">/ ${p.minStock}</span></div>
-            </div>
+            <a class="alert-item" href="${ROUTES.STOCK_OPNAME}" title="Buka stock opname untuk produk ini">
+              <span class="alert-item-info">
+                <span class="alert-item-name">${p.name}</span>
+                <span class="alert-item-warehouse">${getWarehouse(p.warehouseId)?.name || 'Gudang tidak ditemukan'}</span>
+              </span>
+              <span class="alert-item-quantity"><span class="alert-item-stock">${p.stock}</span> <span style="font-size:11px;color:#999">/ ${p.minStock}</span></span>
+            </a>
           `).join('') : '<p style="text-align:center;padding:20px;color:#999">Semua stok aman ✅</p>'}
         </div>
       </div>
@@ -237,22 +269,51 @@ export function renderDashboard() {
         <div class="card-header">
           <div>
             <div class="card-title">Aktivitas Terbaru</div>
-            <div class="card-subtitle">Transaksi barang masuk & keluar</div>
+            <div class="card-subtitle">Perubahan stok dan hasil opname terbaru</div>
           </div>
         </div>
         <div class="activity-list">
           ${[].concat(
-            barangMasuk.map(t => ({ ...t, _type: 'masuk', _label: 'Barang Masuk', _detail: t.items.length + ' item' })),
-            barangKeluar.map(t => ({ ...t, _type: 'keluar', _label: 'Barang Keluar', _detail: t.penerima }))
+            barangMasuk.map(t => ({
+              ...t,
+              _type: 'masuk',
+              _label: 'Barang Masuk',
+              _detail: (t.items || []).reduce((sum, item) => sum + item.qty, 0) + ' unit · ' + (getWarehouse(t.warehouseId)?.name || 'Gudang'),
+            })),
+            barangKeluar.map(t => ({
+              ...t,
+              _type: 'keluar',
+              _label: 'Barang Keluar',
+              _detail: (t.penerima || 'Pengeluaran') + ' · ' + (getWarehouse(t.warehouseId)?.name || 'Gudang'),
+            })),
+            stockAdjustments.map(t => ({
+              ...t,
+              _type: 'adjustment',
+              _label: 'Stock Adjustment',
+              _detail: (getProduct(t.productId)?.name || 'Produk') + ' · ' + (getWarehouse(t.warehouseId)?.name || 'Gudang') + ' · ' + (t.selisih > 0 ? '+' : '') + t.selisih + ' unit',
+            })),
+            stockTransfers.map(t => ({
+              ...t,
+              _type: 'transfer',
+              _label: 'Transfer Stok',
+              _detail: (getWarehouse(t.fromWarehouseId)?.name || 'Gudang asal') + ' → ' + (getWarehouse(t.toWarehouseId)?.name || 'Gudang tujuan') + ' · ' + (t.items || []).reduce((sum, item) => sum + item.qty, 0) + ' unit',
+            })),
+            stockOpnameActivities.map(t => ({
+              ...t,
+              _type: 'opname',
+              _label: 'Hasil Stock Opname',
+              _detail: (getProduct(t.productId)?.name || 'Produk') + ' · ' + (getWarehouse(t.warehouseId)?.name || 'Gudang') + ' · ' + t.sistem + ' → ' + t.fisik + ' unit',
+            }))
           ).sort(function(a, b) {
             return (b.date || '').localeCompare(a.date || '');
-          }).slice(0, 5).map(function(t) {
-            var dotColor = t._type === 'masuk' ? 'green' : 'blue';
+          }).slice(0, 8).map(function(t) {
+            var dotColor = t._type === 'masuk' ? 'green' : t._type === 'adjustment' || t._type === 'opname' ? 'yellow' : 'blue';
             return '<div class="activity-item">' +
               '<div class="activity-dot ' + dotColor + '"></div>' +
               '<div class="activity-content">' +
-                '<div class="activity-text"><strong>' + t._label + '</strong> — ' + t._detail + ' (' + formatDate(t.date) + ')</div>' +
-                '<div class="activity-time">' + (t.ref || 'No ref') + '</div>' +
+                '<div class="activity-text"><strong>' + t._label + '</strong> — ' + t._detail + '</div>' +
+              (t.ref ? '<div class="activity-time">' + t.ref + '</div>' : '') +
+                '<div class="activity-time">' + formatDate(t.date) + '</div>' +
               '</div>' +
             '</div>';
           }).join('') || '<p style="text-align:center;padding:20px;color:#999">Belum ada transaksi</p>'}
@@ -277,6 +338,7 @@ function createBarChartCustom(containerId, movement, width) {
   if (!movement || !movement.length) movement = getMonthlyMovement();
   const height = 260;
   const pad = { top: 34, right: 20, bottom: 40, left: 50 };
+  width = Math.max(width, movement.length * 44 + pad.left + pad.right);
   const chartW = width - pad.left - pad.right;
   const chartH = height - pad.top - pad.bottom;
   const maxVal = Math.max(...movement.flatMap(m => [m.masuk, m.keluar]), 1);
@@ -313,7 +375,7 @@ function createBarChartCustom(containerId, movement, width) {
     <rect x="${pad.left + chartW - 52}" y="4" width="12" height="12" rx="2" fill="#22c55e" opacity="0.85"/>
     <text x="${pad.left + chartW - 36}" y="14" font-size="10" fill="#666">Keluar</text>`;
 
-  container.innerHTML = `<svg width="100%" height="${height}" viewBox="0 0 ${width} ${height}" style="overflow:visible">${gridLines}${html}</svg>`;
+  container.innerHTML = `<svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" style="overflow:visible">${gridLines}${html}</svg>`;
 }
 
 // --- PRODUK LIST (multi-warehouse rows) ---
@@ -541,6 +603,7 @@ export function renderStockOpname() {
     { label: 'Status', key: null, render: r => r.sistem === r.fisik
       ? '<span class="badge badge-success">✓ Sesuai</span>'
       : '<span class="badge badge-warning">⚠ Tidak Sesuai</span>' },
+    { label: 'Aksi', key: null, render: r => '<button class="btn btn-secondary btn-sm" data-action="record-opname" data-id="' + r.productId + '-' + r.warehouseId + '">Catat Fisik</button>' },
   ];
 
   return pageHeader('Stock Opname', 'Pencocokan stok fisik dengan sistem') +
