@@ -65,6 +65,22 @@ function showSignIn(clerk: Clerk) {
   clerk.mountSignIn(signInMount, {
     fallbackRedirectUrl: window.location.href,
     withSignUp: false,
+    appearance: {
+      variables: {
+        colorBackground: '#ffffff',
+        colorForeground: '#0f172a',
+        colorMutedForeground: '#64748b',
+        colorPrimary: '#2563eb',
+        colorPrimaryForeground: '#ffffff',
+        colorInput: '#f8fafc',
+        colorInputForeground: '#0f172a',
+        colorBorder: '#dbe4f0',
+        colorRing: '#3b82f6',
+        colorShadow: '#020617',
+        borderRadius: '14px',
+        fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+      },
+    },
   });
 }
 

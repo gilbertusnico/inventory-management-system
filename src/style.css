@@ -82,6 +82,7 @@ body.clerk-auth-page {
   height: auto;
   min-height: 100vh;
   overflow: auto;
+  background: #0b1730;
 }
 
 #root.clerk-sign-in-root {
@@ -92,6 +93,10 @@ body.clerk-auth-page {
   place-items: center;
   padding: 24px;
   overflow: auto;
+  background:
+    radial-gradient(ellipse at 18% 12%, rgba(37, 99, 235, 0.32), transparent 38%),
+    radial-gradient(ellipse at 86% 82%, rgba(29, 78, 216, 0.22), transparent 42%),
+    linear-gradient(135deg, #0b1730 0%, #102448 52%, #0f1b35 100%);
 }
 
 #root.clerk-sign-in-root .cl-footerAction {
