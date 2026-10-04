@@ -18,11 +18,22 @@ function getCurrentRoute() { return (window.location.hash || '#/dashboard').spli
 function reRender() { if (typeof renderPage === 'function') renderPage(getCurrentRoute()); else window.location.reload(); }
 
 // Save + reRender BEFORE closing modal to avoid white flash
+var saveInProgress = false;
+var persistenceFailed = false;
 function saveAndRefresh(msg) {
-  saveAllData();
-  reRender();
-  closeModal();
-  setTimeout(function() { showToast(msg || 'Data berhasil disimpan', 'success'); }, 80);
+  if (saveInProgress || persistenceFailed) return;
+  saveInProgress = true;
+  saveAllData().then(function() {
+    saveInProgress = false;
+    reRender();
+    closeModal();
+    setTimeout(function() { showToast(msg || 'Data berhasil disimpan', 'success'); }, 80);
+  }).catch(function(error) {
+    saveInProgress = false;
+    persistenceFailed = true;
+    console.error('Gagal menyimpan perubahan ke database:', error);
+    showToast('Data gagal disimpan ke database. Muat ulang halaman sebelum mencoba lagi.', 'error');
+  });
 }
 
 // ======================
@@ -60,8 +71,27 @@ function validateNumber(id, label, opts) {
   var raw = formValue(id);
   if (raw === '') { markError(id, label + ' wajib diisi'); return false; }
   var n = Number(raw);
-  if (isNaN(n)) { markError(id, label + ' harus berupa angka'); return false; }
+  if (!Number.isFinite(n)) { markError(id, label + ' harus berupa angka yang valid'); return false; }
   if (opts.min !== undefined && n < opts.min) { markError(id, label + ' minimal ' + opts.min); return false; }
+  return true;
+}
+function validateInteger(id, label, opts) {
+  opts = opts || {};
+  var raw = formValue(id);
+  if (raw === '') {
+    if (opts.optional) return true;
+    markError(id, label + ' wajib diisi');
+    return false;
+  }
+  var value = Number(raw);
+  if (!Number.isInteger(value)) {
+    markError(id, label + ' harus berupa bilangan bulat');
+    return false;
+  }
+  if (opts.min !== undefined && value < opts.min) {
+    markError(id, label + ' minimal ' + opts.min);
+    return false;
+  }
   return true;
 }
 function validateEmail(id, label) {
@@ -118,19 +148,27 @@ export function handleAddMaster(type) {
           var ok = true;
           ok = validateRequired('f_name', 'Nama produk') && ok;
           ok = validateRequired('f_sku', 'SKU') && ok;
-          ok = validateNumber('f_price', 'Harga', { min: 1 }) && ok;
+          ok = validateNumber('f_price', 'Harga', { min: 0 }) && ok;
+          ok = validateInteger('f_minStock', 'Min. stok', { min: 0, optional: true }) && ok;
+          ok = validateInteger('f_stock', 'Stok awal', { min: 0, optional: true }) && ok;
+          if (products.some(function(product) { return product.sku === formValue('f_sku'); })) {
+            markError('f_sku', 'SKU sudah digunakan');
+            ok = false;
+          }
           if (!ok) { focusFirstError(); return; }
           var newId = nextId(products);
           var whId = parseInt(document.getElementById('f_warehouse') ? document.getElementById('f_warehouse').value : 1) || 1;
-          var stok = parseInt(document.getElementById('f_stock') ? document.getElementById('f_stock').value : 0) || 0;
+          var stokRaw = formValue('f_stock');
+          var stok = stokRaw === '' ? 0 : Number(stokRaw);
+          var minStockRaw = formValue('f_minStock');
           products.push({
             id: newId,
             sku: formValue('f_sku'),
             name: formValue('f_name'),
             categoryId: parseInt(document.getElementById('f_category') ? document.getElementById('f_category').value : 1) || 1,
             supplierId: parseInt(document.getElementById('f_supplier') ? document.getElementById('f_supplier').value : 1) || 1,
-            price: parseInt(formValue('f_price')) || 0,
-            minStock: parseInt(document.getElementById('f_minStock') ? document.getElementById('f_minStock').value : 5) || 5,
+            price: Number(formValue('f_price')),
+            minStock: minStockRaw === '' ? 5 : Number(minStockRaw),
             status: formValue('f_status') || 'Aktif',
             createdAt: new Date().toISOString().split('T')[0]
           });
@@ -191,6 +229,11 @@ export function handleAddSupplier() {
         var ok = true;
         ok = validateRequired('s_name', 'Nama supplier') && ok;
         ok = validateRequired('s_pic', 'PIC') && ok;
+        var supplierEmail = formValue('s_email');
+        if (supplierEmail && !/^\S+@\S+\.\S+$/.test(supplierEmail)) {
+          markError('s_email', 'Email tidak valid (contoh: nama@domain.com)');
+          ok = false;
+        }
         if (!ok) { focusFirstError(); return; }
         suppliers.push({
           id: nextId(suppliers),
@@ -284,9 +327,9 @@ export function handleAddBarangMasuk() {
       addBtn.addEventListener('click', function(e) {
         e.stopPropagation();
         var pid = parseInt(document.getElementById('bm_product')?.value);
-        var qty = parseInt(document.getElementById('bm_qty')?.value);
+        var qty = Number(document.getElementById('bm_qty')?.value);
         if (!pid) { showToast('Pilih produk dulu', 'error'); return; }
-        if (!qty || qty <= 0) { showToast('Qty harus lebih dari 0', 'error'); return; }
+        if (!Number.isInteger(qty) || qty <= 0) { showToast('Qty harus bilangan bulat lebih dari 0', 'error'); return; }
         if (!getProduct(pid)) { showToast('Produk tidak ditemukan', 'error'); return; }
         if (window._bmItems.find(function(i) { return i.productId == pid; })) {
           showToast('Produk sudah ditambahkan', 'info'); return;
@@ -377,10 +420,10 @@ export function handleAddBarangKeluar() {
       addBtn.addEventListener('click', function(e) {
         e.stopPropagation();
         var pid = parseInt(document.getElementById('bk_product')?.value);
-        var qty = parseInt(document.getElementById('bk_qty')?.value);
+        var qty = Number(document.getElementById('bk_qty')?.value);
         var whId = parseInt(document.getElementById('bk_warehouse')?.value);
         if (!pid) { showToast('Pilih produk dulu', 'error'); return; }
-        if (!qty || qty <= 0) { showToast('Qty harus lebih dari 0', 'error'); return; }
+        if (!Number.isInteger(qty) || qty <= 0) { showToast('Qty harus bilangan bulat lebih dari 0', 'error'); return; }
         var ps = getProductStock(pid, whId);
         if (!ps || ps.stock < qty) { showToast('Stok tidak cukup', 'error'); return; }
         if (window._bkItems?.find(function(i) { return i.productId == pid; })) { showToast('Produk sudah ditambahkan', 'info'); return; }
@@ -492,7 +535,11 @@ export function handleAddStockAdjustment() {
         if (!prodVal) { markError('sa_product', 'Pilih produk terlebih dahulu'); focusFirstError(); return; }
         if (fisikRaw.trim() === '') { markError('sa_fisik', 'Stok fisik wajib diisi'); focusFirstError(); return; }
         var fisik = Number(fisikRaw);
-        if (isNaN(fisik)) { markError('sa_fisik', 'Stok fisik harus berupa angka'); focusFirstError(); return; }
+        if (!Number.isInteger(fisik) || fisik < 0) {
+          markError('sa_fisik', 'Stok fisik harus berupa bilangan bulat minimal 0');
+          focusFirstError();
+          return;
+        }
         var whId = parseInt(whVal);
         var productId = parseInt(prodVal);
         var sistem = parseInt(document.getElementById('sa_sistem')?.value) || 0;
@@ -560,10 +607,10 @@ export function handleAddStockTransfer() {
       addBtn.addEventListener('click', function(e) {
         e.stopPropagation();
         var pid = parseInt(document.getElementById('st_product')?.value);
-        var qty = parseInt(document.getElementById('st_qty')?.value);
+        var qty = Number(document.getElementById('st_qty')?.value);
         var fromWhId = parseInt(document.getElementById('st_from')?.value);
         if (!pid || !fromWhId) { showToast('Pilih produk dulu', 'error'); return; }
-        if (!qty || qty <= 0) { showToast('Qty harus lebih dari 0', 'error'); return; }
+        if (!Number.isInteger(qty) || qty <= 0) { showToast('Qty harus bilangan bulat lebih dari 0', 'error'); return; }
         var ps = getProductStock(pid, fromWhId);
         if (!ps || ps.stock < qty) { showToast('Stok tidak cukup', 'error'); return; }
         if (items.find(function(i) { return i.productId == pid; })) { showToast('Produk sudah ditambahkan', 'info'); return; }
@@ -766,30 +813,64 @@ export function handleEdit(action, id) {
     var saveBtn = document.getElementById('saveEdit');
     if (saveBtn) {
       saveBtn.addEventListener('click', function() {
+        clearFormErrors();
         if (type === 'produk') {
-          item.name = document.getElementById('f_name')?.value || item.name;
-          item.sku = document.getElementById('f_sku')?.value || item.sku;
-          item.categoryId = parseInt(document.getElementById('f_category')?.value) || item.categoryId;
-          item.supplierId = parseInt(document.getElementById('f_supplier')?.value) || item.supplierId;
-          item.price = parseInt(document.getElementById('f_price')?.value) || item.price;
-          item.minStock = parseInt(document.getElementById('f_minStock')?.value) || item.minStock;
+          var validProduct = true;
+          validProduct = validateRequired('f_name', 'Nama produk') && validProduct;
+          validProduct = validateRequired('f_sku', 'SKU') && validProduct;
+          validProduct = validateNumber('f_price', 'Harga', { min: 0 }) && validProduct;
+          validProduct = validateInteger('f_minStock', 'Min. stok', { min: 0 }) && validProduct;
+          validProduct = hasSelectValue('f_category', 'Kategori') && validProduct;
+          validProduct = hasSelectValue('f_supplier', 'Supplier') && validProduct;
+          if (products.some(function(product) {
+            return product.id !== item.id && product.sku === formValue('f_sku');
+          })) {
+            markError('f_sku', 'SKU sudah digunakan');
+            validProduct = false;
+          }
+          if (!validProduct) { focusFirstError(); return; }
+          item.name = formValue('f_name');
+          item.sku = formValue('f_sku');
+          item.categoryId = Number(document.getElementById('f_category').value);
+          item.supplierId = Number(document.getElementById('f_supplier').value);
+          item.price = Number(formValue('f_price'));
+          item.minStock = Number(formValue('f_minStock'));
           item.status = document.getElementById('f_status')?.value || item.status;
         } else if (type === 'kategori') {
-          item.name = document.getElementById('k_name')?.value || item.name;
-          item.description = document.getElementById('k_desc')?.value || item.description;
+          if (!validateRequired('k_name', 'Nama kategori')) { focusFirstError(); return; }
+          item.name = formValue('k_name');
+          item.description = document.getElementById('k_desc')?.value || '';
         } else if (type === 'supplier') {
-          item.name = document.getElementById('s_name')?.value || item.name;
-          item.pic = document.getElementById('s_pic')?.value || item.pic;
-          item.email = document.getElementById('s_email')?.value || item.email;
-          item.phone = document.getElementById('s_phone')?.value || item.phone;
+          var validSupplier = true;
+          validSupplier = validateRequired('s_name', 'Nama supplier') && validSupplier;
+          validSupplier = validateRequired('s_pic', 'PIC') && validSupplier;
+          var supplierEmail = formValue('s_email');
+          if (supplierEmail && !/^\S+@\S+\.\S+$/.test(supplierEmail)) {
+            markError('s_email', 'Email tidak valid (contoh: nama@domain.com)');
+            validSupplier = false;
+          }
+          if (!validSupplier) { focusFirstError(); return; }
+          item.name = formValue('s_name');
+          item.pic = formValue('s_pic');
+          item.email = supplierEmail;
+          item.phone = formValue('s_phone');
         } else if (type === 'gudang') {
-          item.code = document.getElementById('g_code')?.value || item.code;
-          item.name = document.getElementById('g_name')?.value || item.name;
-          item.location = document.getElementById('g_location')?.value || item.location;
+          var validWarehouse = true;
+          validWarehouse = validateRequired('g_code', 'Kode gudang') && validWarehouse;
+          validWarehouse = validateRequired('g_name', 'Nama gudang') && validWarehouse;
+          validWarehouse = validateRequired('g_location', 'Lokasi') && validWarehouse;
+          if (!validWarehouse) { focusFirstError(); return; }
+          item.code = formValue('g_code');
+          item.name = formValue('g_name');
+          item.location = formValue('g_location');
           item.status = document.getElementById('g_status')?.value || item.status;
         } else if (type === 'user') {
-          item.name = document.getElementById('u_name')?.value || item.name;
-          item.email = document.getElementById('u_email')?.value || item.email;
+          var validUser = true;
+          validUser = validateRequired('u_name', 'Nama') && validUser;
+          validUser = validateEmail('u_email', 'Email') && validUser;
+          if (!validUser) { focusFirstError(); return; }
+          item.name = formValue('u_name');
+          item.email = formValue('u_email');
           item.role = document.getElementById('u_role')?.value || item.role;
           item.status = document.getElementById('u_status')?.value || item.status;
         }
@@ -825,6 +906,39 @@ export function handleDelete(action, id) {
   name = nameMap[type] ? nameMap[type]() : ('Item #' + id);
   var arr = dataMap[type];
   if (!arr) { showToast('Hapus tidak dikenali', 'error'); return; }
+  if (!arr.some(function(item) { return item.id == id; })) {
+    showToast('Data tidak ditemukan', 'error');
+    return;
+  }
+
+  var referenced = false;
+  if (type === 'kategori') {
+    referenced = products.some(function(product) { return product.categoryId === id; });
+  } else if (type === 'supplier') {
+    referenced = products.some(function(product) { return product.supplierId === id; }) ||
+      barangMasuk.some(function(transaction) { return transaction.supplierId === id; });
+  } else if (type === 'gudang') {
+    referenced = productStocks.some(function(stock) { return stock.warehouseId === id; }) ||
+      barangMasuk.some(function(transaction) { return transaction.warehouseId === id; }) ||
+      barangKeluar.some(function(transaction) { return transaction.warehouseId === id; }) ||
+      stockAdjustments.some(function(adjustment) { return adjustment.warehouseId === id; }) ||
+      stockTransfers.some(function(transfer) {
+        return transfer.fromWarehouseId === id || transfer.toWarehouseId === id;
+      });
+  } else if (type === 'produk') {
+    referenced = barangMasuk.some(function(transaction) {
+      return transaction.items.some(function(line) { return line.productId === id; });
+    }) || barangKeluar.some(function(transaction) {
+      return transaction.items.some(function(line) { return line.productId === id; });
+    }) || stockAdjustments.some(function(adjustment) { return adjustment.productId === id; }) ||
+      stockTransfers.some(function(transfer) {
+        return transfer.items.some(function(line) { return line.productId === id; });
+      });
+  }
+  if (referenced && ['kategori', 'supplier', 'gudang', 'produk'].includes(type)) {
+    showToast('Tidak bisa menghapus data yang masih digunakan transaksi atau data lain', 'error');
+    return;
+  }
 
   // ======================
   // Pengecekan stok cukup SEBELUM void (mencegah stok negatif)

@@ -4,12 +4,20 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "node --env-file-if-exists=.env server.js",
     "build": "vite build",
-    "preview": "vite preview"
+    "start": "NODE_ENV=production node --env-file-if-exists=.env server.js",
+    "preview": "vite preview",
+    "test:transactions": "node tests/transactions-e2e.mjs",
+    "test:master-reports": "node tests/master-reports-e2e.mjs",
+    "test:vercel-api": "node tests/vercel-api.mjs"
   },
   "dependencies": {
+    "@clerk/backend": "^3.22.0",
+    "@clerk/clerk-js": "^6.37.0",
+    "@neondatabase/serverless": "^1.0.2",
     "@tailwindcss/vite": "^4.1.18",
+    "express": "^4.21.2",
     "jspdf": "^4.2.1",
     "jspdf-autotable": "^5.0.8",
     "react": "^18.3.1",

@@ -130,27 +130,7 @@ export const stockTransfers = [
 ];
 
 // Stock Opname — di-generate dinamis dari productStocks
-// Fisik user disimpan di map terpisah dan dipulihkan dari localStorage
 var _stockOpnameFisik = {};
-
-function loadFisikMap() {
-  try {
-    var saved = localStorage.getItem(STORAGE_PREFIX + 'stockOpnameFisik');
-    if (saved) {
-      _stockOpnameFisik = JSON.parse(saved);
-    }
-  } catch (e) {
-    _stockOpnameFisik = {};
-  }
-}
-
-function saveFisikMap() {
-  try {
-    localStorage.setItem(STORAGE_PREFIX + 'stockOpnameFisik', JSON.stringify(_stockOpnameFisik));
-  } catch (e) {}
-}
-
-loadFisikMap();
 
 export function getStockOpname() {
   var map = {};
@@ -176,8 +156,11 @@ export function getStockOpname() {
 }
 
 export function setStockOpnameFisik(productId, warehouseId, fisik) {
+  if (!Number.isInteger(fisik) || fisik < 0) {
+    throw new RangeError('Stok fisik harus bilangan bulat minimal 0');
+  }
   _stockOpnameFisik[productId + '-' + warehouseId] = fisik;
-  saveFisikMap();
+  return saveAllData();
 }
 
 export const users = [
@@ -373,7 +356,7 @@ export function updateCounts() {
 }
 
 // ============================================
-// LOCAL STORAGE PERSISTENCE
+// DATABASE PERSISTENCE
 // ============================================
 
 var STORAGE_PREFIX = 'inventaris_';
@@ -390,43 +373,118 @@ var ALL_DATASETS = [
   { key: 'users', data: users },
 ];
 
-function initFromStorage() {
-  var hasData = false;
+var saveQueue = Promise.resolve();
+var authTokenProvider = null;
+
+function getDataSnapshot() {
+  var snapshot = {};
   for (var i = 0; i < ALL_DATASETS.length; i++) {
-    var ds = ALL_DATASETS[i];
-    try {
-      var saved = localStorage.getItem(STORAGE_PREFIX + ds.key);
-      if (saved) {
-        var parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          ds.data.length = 0;
-          for (var j = 0; j < parsed.length; j++) {
-            ds.data.push(parsed[j]);
-          }
-          hasData = true;
-        }
-      }
-    } catch (e) {
-      console.warn('Gagal memuat ' + ds.key + ' dari localStorage:', e);
+    snapshot[ALL_DATASETS[i].key] = ALL_DATASETS[i].data;
+  }
+  snapshot.stockOpnameFisik = _stockOpnameFisik;
+  return snapshot;
+}
+
+function applyDataSnapshot(snapshot) {
+  for (var i = 0; i < ALL_DATASETS.length; i++) {
+    var dataset = ALL_DATASETS[i];
+    var records = snapshot[dataset.key];
+    if (!Array.isArray(records)) {
+      throw new Error('Format data database tidak valid: ' + dataset.key);
+    }
+    dataset.data.length = 0;
+    for (var j = 0; j < records.length; j++) {
+      dataset.data.push(records[j]);
     }
   }
-  if (!hasData) {
-    saveAllData();
+  _stockOpnameFisik = snapshot.stockOpnameFisik || {};
+}
+
+function readLegacySnapshot() {
+  var snapshot = getDataSnapshot();
+  for (var i = 0; i < ALL_DATASETS.length; i++) {
+    var dataset = ALL_DATASETS[i];
+    var saved = localStorage.getItem(STORAGE_PREFIX + dataset.key);
+    if (!saved) continue;
+    try {
+      var records = JSON.parse(saved);
+      if (Array.isArray(records) && records.length > 0) {
+        snapshot[dataset.key] = records;
+      }
+    } catch (error) {
+      console.warn('Data local ' + dataset.key + ' tidak valid dan dilewati:', error);
+    }
   }
+
+  var savedFisik = localStorage.getItem(STORAGE_PREFIX + 'stockOpnameFisik');
+  if (savedFisik) {
+    try {
+      var fisik = JSON.parse(savedFisik);
+      if (fisik && typeof fisik === 'object' && !Array.isArray(fisik)) {
+        snapshot.stockOpnameFisik = fisik;
+      }
+    } catch (error) {
+      console.warn('Data local stockOpnameFisik tidak valid dan dilewati:', error);
+    }
+  }
+  return snapshot;
+}
+
+function clearLegacyStorage() {
+  for (var i = 0; i < ALL_DATASETS.length; i++) {
+    localStorage.removeItem(STORAGE_PREFIX + ALL_DATASETS[i].key);
+  }
+  localStorage.removeItem(STORAGE_PREFIX + 'stockOpnameFisik');
+}
+
+async function requestData(path, options) {
+  var requestOptions = Object.assign({}, options || {});
+  var headers = Object.assign({}, requestOptions.headers || {});
+  if (authTokenProvider) {
+    var token = await authTokenProvider();
+    if (!token) throw new Error('Sesi login sudah berakhir. Silakan login kembali.');
+    headers.Authorization = 'Bearer ' + token;
+  }
+  requestOptions.headers = headers;
+  var response = await fetch('/api/data' + path, requestOptions);
+  var result = await response.json();
+  if (!response.ok) {
+    throw new Error(result.error || 'Permintaan ke database gagal (' + response.status + ')');
+  }
+  return result;
+}
+
+export function setAuthTokenProvider(provider) {
+  authTokenProvider = provider;
+}
+
+export async function initializeData() {
+  var stored = await requestData('', { method: 'GET' });
+  var snapshot = stored.data;
+  if (!snapshot) {
+    snapshot = readLegacySnapshot();
+    var initialized = await requestData('/initialize', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ data: snapshot }),
+    });
+    snapshot = initialized.data;
+  }
+  applyDataSnapshot(snapshot);
+  clearLegacyStorage();
 }
 
 export function saveAllData() {
-  for (var i = 0; i < ALL_DATASETS.length; i++) {
-    var ds = ALL_DATASETS[i];
-    try {
-      localStorage.setItem(STORAGE_PREFIX + ds.key, JSON.stringify(ds.data));
-    } catch (e) {
-      console.warn('Gagal menyimpan ' + ds.key + ' ke localStorage:', e);
-    }
-  }
+  var save = saveQueue.then(function() {
+    return requestData('', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ data: getDataSnapshot() }),
+    });
+  });
+  saveQueue = save.catch(function() {});
+  return save;
 }
-
-initFromStorage();
 
 function nextId(arr) {
   if (!arr || arr.length === 0) return 1;

@@ -13,7 +13,8 @@ const dom = new JSDOM('<!DOCTYPE html><html><body><div id="root"></div><div id="
 globalThis.window = dom.window;
 globalThis.document = dom.window.document;
 globalThis.localStorage = dom.window.localStorage;
-// localStorage harus KOSONG agar seed data dipakai (initFromStorage)
+globalThis.fetch = async () => ({ ok: true, json: async () => ({ data: null }) });
+// This test uses built-in seed data and stubs database persistence.
 dom.window.localStorage.clear();
 
 // ============================================

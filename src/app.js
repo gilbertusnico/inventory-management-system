@@ -42,7 +42,7 @@ function buildLayout() {
       '</div>' +
       '<nav class="sidebar-nav" id="sidebarNav">' + sidebarGroups + '</nav>' +
       '<div class="sidebar-footer">' +
-        '<div class="sidebar-user"><div class="sidebar-user-avatar">A</div><div class="sidebar-user-info"><div class="sidebar-user-name">Admin User</div><div class="sidebar-user-role">Owner</div></div></div>' +
+        '<div class="sidebar-user"><div id="clerkUserButton"></div><div class="sidebar-user-info"><div class="sidebar-user-name" id="clerkUserName"></div></div></div>' +
         '<div class="sidebar-footer-brand">Powered by  Overkreatif</div>' +
       '</div>' +
     '</aside>' +

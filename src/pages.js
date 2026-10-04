@@ -583,7 +583,9 @@ export function renderReportStok() {
   }
   var totalValue = 0;
   var totalItems = 0;
+  var visibleProductIds = new Set();
   for (var i = 0; i < data.length; i++) {
+    visibleProductIds.add(data[i].id);
     totalItems += data[i].stock;
     totalValue += data[i].stock * data[i].price;
   }
@@ -602,7 +604,7 @@ export function renderReportStok() {
     reportFilterBar('stok', reportSearch()) +
     reportRangeBadge() +
     '<div class="summary-cards">' +
-      '<div class="summary-card"><div class="summary-card-label">Total Produk (SKU)</div><div class="summary-card-value">' + products.length + '</div></div>' +
+      '<div class="summary-card"><div class="summary-card-label">Total Produk (SKU)</div><div class="summary-card-value">' + visibleProductIds.size + '</div></div>' +
       '<div class="summary-card"><div class="summary-card-label">Total Item</div><div class="summary-card-value">' + totalItems + '</div></div>' +
       '<div class="summary-card"><div class="summary-card-label">Total Nilai</div><div class="summary-card-value">' + formatCurrency(totalValue) + '</div></div>' +
     '</div>' +

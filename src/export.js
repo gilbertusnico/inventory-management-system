@@ -4,13 +4,12 @@
 import { jsPDF } from 'jspdf';
 import { autoTable } from 'jspdf-autotable';
 import {
-  products, categories, suppliers, warehouses,
+  categories, suppliers, warehouses,
   barangMasuk, barangKeluar,
   getProduct, getSupplier, getWarehouse, getCategory,
-  getProductStockRows, getTotalStock,
-  formatCurrency, formatDate
+  getProductStockRows, formatDate
 } from './data.js';
-import { getDateRange, filterByDate, buildMutasiSeries } from './report-utils.js';
+import { getDateRange, inRange, filterByDate, buildMutasiSeries } from './report-utils.js';
 
 function header(doc, title, subtitle) {
   var w = doc.internal.pageSize.getWidth();
@@ -86,17 +85,30 @@ function autoTableOptions(startY) {
 // EXPORT BY TYPE
 // ======================
 
-export function exportReportPDF(type) {
+export function buildReportPDF(type) {
   var doc = new jsPDF('landscape');
   var startY, items, cols, title, subtitle, summaryItems;
 
   switch (type) {
     case 'stok':
       title = 'Laporan Stok Saat Ini';
-      subtitle = 'Produk Aktif';
+      subtitle = 'Semua Produk';
       startY = header(doc, title, subtitle);
       var rows = getProductStockRows();
-      var totalSKU = products.filter(function(p) { return p.status === 'Aktif'; }).length;
+      var stockRange = getDateRange();
+      if (stockRange.from || stockRange.to) {
+        rows = rows.filter(function(row) {
+          return inRange(row.createdAt, stockRange.from, stockRange.to);
+        });
+      }
+      var stockSearch = (window._searchTerm || '').toLowerCase();
+      if (stockSearch) {
+        rows = rows.filter(function(row) {
+          return row.name.toLowerCase().includes(stockSearch) ||
+            row.sku.toLowerCase().includes(stockSearch);
+        });
+      }
+      var totalSKU = new Set(rows.map(function(row) { return row.id; })).size;
       var totalItem = rows.reduce(function(s, r) { return s + r.stock; }, 0);
       var totalVal = rows.reduce(function(s, r) { return s + r.stock * r.price; }, 0);
       summaryItems = [
@@ -231,5 +243,12 @@ export function exportReportPDF(type) {
       return;
   }
 
-  doc.save('laporan-' + type + '-' + new Date().toISOString().split('T')[0] + '.pdf');
+  return doc;
+}
+
+export function exportReportPDF(type) {
+  var doc = buildReportPDF(type);
+  if (doc) {
+    doc.save('laporan-' + type + '-' + new Date().toISOString().split('T')[0] + '.pdf');
+  }
 }

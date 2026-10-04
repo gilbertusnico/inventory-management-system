@@ -96,8 +96,26 @@ export function buildMutasiSeries(masukRecords, keluarRecords) {
   all.sort();
 
   if (all.length === 0) {
-    var months = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
-    return months.map(function(m) { return { label: m, masuk: 0, keluar: 0 }; });
+    if (!range.from && !range.to) {
+      var months = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+      return months.map(function(m) { return { label: m, masuk: 0, keluar: 0 }; });
+    }
+    if (!range.from || !range.to) return [];
+    var emptyStart = new Date(range.from + 'T00:00:00');
+    var emptyEnd = new Date(range.to + 'T00:00:00');
+    var emptySeries = [];
+    var emptyCursor = new Date(emptyStart.getFullYear(), emptyStart.getMonth(), 1);
+    while (emptyCursor <= emptyEnd) {
+      var emptyYear = emptyCursor.getFullYear();
+      var emptyMonth = emptyCursor.getMonth();
+      var emptyLabel = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'][emptyMonth];
+      if (emptyStart.getFullYear() !== emptyEnd.getFullYear()) {
+        emptyLabel += ' ' + String(emptyYear).slice(-2);
+      }
+      emptySeries.push({ label: emptyLabel, masuk: 0, keluar: 0 });
+      emptyCursor.setMonth(emptyCursor.getMonth() + 1);
+    }
+    return emptySeries;
   }
 
   var firstDate = range.from || all[0];

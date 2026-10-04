@@ -78,6 +78,33 @@ body {
   height: 100vh;
 }
 
+body.clerk-auth-page {
+  height: auto;
+  min-height: 100vh;
+  overflow: auto;
+}
+
+#root.clerk-sign-in-root {
+  display: grid;
+  width: 100%;
+  height: 100vh;
+  min-height: 100vh;
+  place-items: center;
+  padding: 24px;
+  overflow: auto;
+}
+
+#root.clerk-sign-in-root .cl-footerAction {
+  display: none !important;
+}
+
+@media (max-height: 600px) {
+  #root.clerk-sign-in-root {
+    height: auto;
+    place-items: start center;
+  }
+}
+
 a { color: inherit; text-decoration: none; }
 button { cursor: pointer; border: none; background: none; font: inherit; color: inherit; }
 input, select, textarea { font: inherit; color: inherit; }
